@@ -1,73 +1,66 @@
-import "../Net.alusus";
+import "Srl/Net.alusus";
 import "Srl/Console.alusus";
 import "Srl/System.alusus";
 import "Srl/Fs.alusus";
 use Srl;
 
 module Nashir {
+    def filePath: String;
+    def text: String;
+    def myWorkDir: String;
+    def projectName: String;
+
+    func sendData() {
+        def result: ptr[Char];
+        def count: ArchInt;
+        Fs.readFile(filePath, result~ptr, count~ptr);
+        text = String.format("%s", result);
+        def cfilePath: String;
+        cfilePath = myWorkDir.slice(0, myWorkDir.findLast("/") + 1,);
+        order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cfilePath + String(" ") + projectName;
+        System.exec(order.buf);
+        def projectUpload: String;
+        projectUpload = projectName + String(".tar.gz");
+        Net.putFile("http://localhost:8010/api/upload-project", projectUpload.buf, text.buf);
+        order = String("rm ") + projectUpload;
+        System.exec(order.buf);
+    }
+
     func uploadFiles() {
         def fp: ptr[Fs.File];
         def path: array[char, 1035];
         def order: String;
         order = String("pwd");
         fp = Fs.openProcess(order.buf, "r");
-        while (Fs.readLine(path~ptr, 1035, fp) != null) {
-        }
-        def Path: String;
-        def text: String;
+        Fs.readLine(path~ptr, 1035, fp);
+        filePath: String;
+        text: String;
         def fps: ptr[Fs.File];
-        def myWorkDir: String;
         myWorkDir = path~ptr;
         Fs.closeProcess(fp);
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
         def userName: String = "";
         def authToken: String = "";
-        Path = myWorkDir + String("/.deploy.settings");
-        def projectName: String;
+        filePath = myWorkDir + String("/.deploy.settings");
         projectName = myWorkDir.slice(myWorkDir.findLast("/") + 1, myWorkDir.getLength());
-        if !Fs.exists(Path.buf) {
+        if !Fs.exists(filePath.buf) {
             Console.print("Enter UserName to be added : \n>");
             Console.getString(userName, 100);
             Console.print("Enter User password to be added : \n>");
             Console.getString(authToken, 100);
             text = userName + String(":") + authToken + String(":") + projectName;
-            Net.post("http://localhost:8010/api/upload-project", Path.buf, text.buf);
-            def result: ptr[Char];
-            def count: ArchInt;
-            Fs.readFile(Path, result~ptr, count~ptr);
-            text = String.format("%s", result);
-            Console.print(text);
-            def cPath: String;
-            cPath = myWorkDir.slice(0, myWorkDir.findLast("/") + 1,);
-            order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cPath + String(" ") + projectName;
-            System.exec(order.buf);
-            def projectUpload: String;
-            projectUpload = projectName + String(".tar.gz");
-            Net.putFile("http://localhost:8010/api/upload-project", projectUpload.buf, text.buf);
-            order = String("rm ") + projectUpload;
-            System.exec(order.buf);
+            Net.post("http://localhost:8010/api/upload-project", filePath.buf, text.buf);
+            sendData();
         } else {
-            def ans: String = ""
-                Console.print("project existed ! do you want to replace it ? y/n: \n>");
+            def ans: String = "";
+            Console.print("project existed ! do you want to replace it ? y/n: \n>");
             Console.getString(ans, 1);
             if ans == String("y") {
-                def result: ptr[Char];
-                def count: ArchInt;
-                Fs.readFile(Path, result~ptr, count~ptr);
-                text = String.format("%s", result);
-                Console.print(text);
-                def cPath: String;
-                cPath = myWorkDir.slice(0, myWorkDir.findLast("/") + 1,);
-                order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cPath + String(" ") + projectName;
-                System.exec(order.buf);
-                def projectUpload: String;
-                projectUpload = projectName + String(".tar.gz");
-                Net.putFile("http://localhost:8010/api/upload-project", projectUpload.buf, text.buf);
-                order = String("rm ") + projectUpload;
-                System.exec(order.buf);
+                sendData();
             }
         }
     }
 }
+
 Nashir.uploadFiles();
 
