@@ -9,14 +9,18 @@ module Nashir {
     def text: String;
     def myWorkDir: String;
     def projectName: String;
-
-    func sendData() {
+    func sendData(projectStatus : String) {
         def result: ptr[Char];
         def count: ArchInt;
         Fs.readFile(filePath, result~ptr, count~ptr);
         text = String.format("%s", result);
+        text =text + String(:)+projectStatus;
         def cfilePath: String;
-        cfilePath = myWorkDir.slice(0, myWorkDir.findLast("/") + 1,);
+        cfilePath = myWorkDir;
+        order = String("alusus main.alusus build ");
+        System.exec(order.buf);
+        order = String("mv build ")+projectName;
+        System.exec(order.buf);
         order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cfilePath + String(" ") + projectName;
         System.exec(order.buf);
         def projectUpload: String;
@@ -50,13 +54,13 @@ module Nashir {
             Console.getString(authToken, 100);
             text = userName + String(":") + authToken + String(":") + projectName;
             Net.post("http://localhost:8010/api/upload-project", filePath.buf, text.buf);
-            sendData();
+            sendData(String("new"));
         } else {
             def ans: String = "";
             Console.print("project existed ! do you want to replace it ? y/n: \n>");
             Console.getString(ans, 1);
             if ans == String("y") {
-                sendData();
+                sendData(String("old"));
             }
         }
     }
