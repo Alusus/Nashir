@@ -46,14 +46,14 @@ module Nashir {
         def userName: String = "";
         def authToken: String = "";
         filePath = myWorkDir + String("/.deploy.settings");
-        projectName = myWorkDir.slice(myWorkDir.findLast("/") + 1, myWorkDir.getLength());
+        myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
         if !Fs.exists(filePath.buf) {
             Console.print("Enter UserName to be added : \n>");
             Console.getString(userName, 100);
             Console.print("Enter User password to be added : \n>");
             Console.getString(authToken, 100);
             text = userName + String(":") + authToken + String(":") + projectName;
-            Net.post("http://localhost:8010/api/upload-project", filePath.buf, text.buf);
+            Net.post("http://localhost:8010/api/upload-project", text.buf , filePath.buf);
             sendData(String("new"));
         } else {
             def ans: String = "";
