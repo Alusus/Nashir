@@ -1,0 +1,70 @@
+import "Srl/Net.alusus";
+import "Srl/Console.alusus";
+import "Srl/System.alusus";
+import "Srl/Fs.alusus";
+use Srl;
+
+module Nashir {
+    def filePath: String;
+    def text: String;
+    def myWorkDir: String;
+    def projectName: String;
+    func sendData(projectStatus : String) {
+        def result: ptr[Char];
+        def count: ArchInt;
+        Fs.readFile(filePath, result~ptr, count~ptr);
+        text = String.format("%s", result);
+        text =text + String(:)+projectStatus;
+        def cfilePath: String;
+        cfilePath = myWorkDir;
+        order = String("alusus main.alusus build ");
+        System.exec(order.buf);
+        order = String("mv build ")+projectName;
+        System.exec(order.buf);
+        order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cfilePath + String(" ") + projectName;
+        System.exec(order.buf);
+        def projectUpload: String;
+        projectUpload = projectName + String(".tar.gz");
+        Net.putFile("http://localhost:8010/api/upload-project", projectUpload.buf, text.buf);
+        order = String("rm ") + projectUpload;
+        System.exec(order.buf);
+    }
+
+    func uploadFiles() {
+        def fp: ptr[Fs.File];
+        def path: array[char, 1035];
+        def order: String;
+        order = String("pwd");
+        fp = Fs.openProcess(order.buf, "r");
+        Fs.readLine(path~ptr, 1035, fp);
+        filePath: String;
+        text: String;
+        def fps: ptr[Fs.File];
+        myWorkDir = path~ptr;
+        Fs.closeProcess(fp);
+        myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
+        def userName: String = "";
+        def authToken: String = "";
+        filePath = myWorkDir + String("/.deploy.settings");
+        myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
+        if !Fs.exists(filePath.buf) {
+            Console.print("Enter UserName to be added : \n>");
+            Console.getString(userName, 100);
+            Console.print("Enter User password to be added : \n>");
+            Console.getString(authToken, 100);
+            text = userName + String(":") + authToken + String(":") + projectName;
+            Net.post("http://localhost:8010/api/upload-project", text.buf , filePath.buf);
+            sendData(String("new"));
+        } else {
+            def ans: String = "";
+            Console.print("project existed ! do you want to replace it ? y/n: \n>");
+            Console.getString(ans, 1);
+            if ans == String("y") {
+                sendData(String("old"));
+            }
+        }
+    }
+}
+
+Nashir.uploadFiles();
+
