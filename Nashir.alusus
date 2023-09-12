@@ -60,19 +60,19 @@ module Nashir {
             def userAns : String="n";
             def status : String="";
             if networkObject.responseHttpStatus == 400{
-                System.print("con't upload too big file !");
+                Console.print("con't upload too big file !");
                 break;
 
             }
             else if networkObject.responseHttpStatus == 501{
-                System.print("some thing wrong! please try agin later !");
+                Console.print("some thing wrong! please try agin later !");
                 break;
             }
             else if networkObject.responseHttpStatus == 403{
                 def order : String="rm ";
                 order = order + filePath;
                 System.exec(order.buf);
-                System.print("auth error !");
+                Console.print("auth error !");
                 break;
             }
             else if networkObject.responseHttpStatus == 200{
@@ -83,13 +83,13 @@ module Nashir {
             }
             else {
                 if networkObject.responseHttpStatus == 401{
-                    System.print("project already exists ! do you want to update it ?\n press Y/y to update ! \n>");
+                    Console.print("project already exists ! do you want to update it ?\n press Y/y to update ! \n>");
                     Console.getString(userAns, 100);
                     status=String("old");
 
                 }
                 else if networkObject.responseHttpStatus == 402{
-                    System.print("project already exists !project doesn't exists ! do you want to add new project it ?\n press Y/y to update ! \n>");
+                    Console.print("project already exists !project doesn't exists ! do you want to add new project it ?\n press Y/y to update ! \n>");
                     Console.getString(userAns, 100);
                     status=String("new");
                 }
@@ -131,17 +131,18 @@ module Nashir {
 	        networkObject.authKey=text;
             networkObject.post( String("new").buf , filePath.buf);
             Console.print(networkObject.responseHttpStatus);
+
             if networkObject.responseHttpStatus == 400{
                 def order : String="rm ";
                 order = order + filePath;
                 System.exec(order.buf);
-                System.print("Authentication error !");
+                Console.print("Authentication error !");
             }
             else if networkObject.responseHttpStatus == 401{
                 def order : String="rm ";
                 order = order + filePath;
                 System.exec(order.buf);
-                System.print("Wrong UserName or Password !");
+                Console.print("Wrong UserName or Password !");
             }
             else if networkObject.responseHttpStatus == 200{
                 sendData(String("new"),userName,authToken,projectName);
@@ -149,8 +150,8 @@ module Nashir {
             else{
                 def order : String="rm ";
                 order = order + filePath;
-                System.exec(order.buf);
-                System.print("Something wrong please try again later !");
+                //System.exec(order.buf);
+                Console.print("Something wrong please try again later !");
             }
 
         } else {
