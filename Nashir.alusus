@@ -7,157 +7,108 @@ Apm.importFile("Alusus/ExtendedNet");
 use Srl;
 
 module Nashir {
-    def filePath: String;
-    def text: String;
+    def HOST: "http://localhost:8010";
+    def CREATE_UPLOAD_TOKEN_PATH: "/api/create-user-upload-token";
+    def UPLOAD_PROJECT_PATH: "/api/upload-project";
+
     def myWorkDir: String;
     def projectName: String;
-    func sendData(projectStatus : String,userName:String,authToken:String,projectName:String) {
-        def result: ptr[Char];
-	    def networkObject: Net.Request(String("http://localhost:8010/api/upload-project"));
-        def networkObject2: Net.Request(String("http://localhost:8010/api/create-user-upload-token"));
-        def count: ArchInt;
-        Fs.readFile(filePath, result~ptr, count~ptr);
-        text = String.format("%s", result);
-        if(text.split("&&&&&").getLength()==2)
-        {
-            while(text.split("&&&&&").getLength()==2){
-                Console.print("please go the URL :\n %s \n and enter your payment info and then press enter",text.split("&&&&&")(1).buf)
-                def order : String="rm ";
-                order = order + filePath;
-                System.exec(order.buf);
-                Console.getChar();
-                text = userName + String(":") + authToken + String(":") + projectName;
-	            networkObject2.authKey=text;
-                networkObject2.post( String("new").buf , filePath.buf);
-                Fs.readFile(filePath, result~ptr, count~ptr);
-                text = String.format("%s", result);
 
-            }
-            text =text + String(":")+projectStatus;
-            if(text.split(":").getLength()!=4){
-                def order : String="rm ";
-                order = order + filePath;
-                System.exec(order.buf);
+    func getUploadToken(): String {
+        def authKey: String;
+        def settingsFilePath = myWorkDir + String("/.deploy.settings");
+        if Fs.exists(settingsFilePath) {
+            authKey = Fs.readFile(settingsFilePath);
+            // TODO: Validate authKey in the server.
+            if authKey.split(":").getLength() == 3 return authKey;
+        }
+        def userName: array[Char, 100];
+        def authToken: array[Char, 100];
+        Console.print("Enter username: \n>");
+        Console.getString(userName~ptr, 100);
+        Console.print("Enter password: \n>");
+        Console.getString(authToken~ptr, 100);
+        while 1 {
+            def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH));
+            request.authKey = String(userName~ptr) + String(":") + authToken~ptr + String(":") + projectName;
+            request.post("new", settingsFilePath.buf);
+            if request.responseHttpStatus == 200 {
+                authKey = Fs.readFile(settingsFilePath);
+                if authKey.split(":").getLength() == 3 {
+                    break;
+                } else if text.split("&&&&&").getLength() == 2 {
+                    Console.print(
+                        "Please setup your payment profile by visiting this URL:\n%s\nPress enter when you're done.\n",
+                        text.split("&&&&&")(1).buf
+                    );
+                    Console.getChar();
+                } else {
+                    Console.print("Unexpected error! Please try again.\n");
+                }
+            } else if request.responseHttpStatus == 401 {
+                Console.print("Authentication error. Invalid username or password.\n");
+                Console.print("Enter username: \n>");
+                Console.getString(userName~ptr, 100);
+                Console.print("Enter password: \n>");
+                Console.getString(authToken~ptr, 100);
+            } else {
+                Console.print("Unexpected error! Please try again.\n");
             }
         }
-        else{
-	        text =text + String(":")+projectStatus;
-	}
-        while(text.split(":").getLength()==4){
-            def cfilePath: String;
-            cfilePath = myWorkDir;
-            def order : String = "alusus main.alusus build ";
-            System.exec(order.buf);
-            order = String.format("mv Build ")+projectName;
-            System.exec(order.buf);
-            Console.print(order)
-            order = String("tar cvzf  ") + projectName + String(".tar.gz  -C ") + cfilePath + String(" ") + projectName;
-            System.exec(order.buf);
-            def projectUpload: String;
-            projectUpload = projectName + String(".tar.gz");
-	        networkObject.authKey=text;
-            networkObject.putFile( projectUpload);
-            def userAns : String="n";
-            def status : String="";
-            if networkObject.responseHttpStatus == 400{
-                Console.print("con't upload too big file !");
-                break;
+        return authKey;
+    }
 
-            }
-            else if networkObject.responseHttpStatus == 501{
-                Console.print("some thing wrong! please try agin later !");
-                break;
-            }
-            else if networkObject.responseHttpStatus == 403{
-                def order : String="rm ";
-                order = order + filePath;
-                System.exec(order.buf);
-                Console.print("auth error !");
-                break;
-            }
-            else if networkObject.responseHttpStatus == 200{
-                Console.print("\n%s\n",networkObject.responseBody.buf)
-                order = String("rm ") + projectUpload;
-                System.exec(order.buf);
-                break;
-            }
-            else {
-                if networkObject.responseHttpStatus == 401{
-                    Console.print("project already exists ! do you want to update it ?\n press Y/y to update ! \n>");
-                    Console.getString(userAns, 100);
-                    status=String("old");
+    func uploadProject(authKey: String) {
+        def order: String = "alusus main.alusus build";
+        System.exec(order);
+        order = String.format("mv Build ") + projectName;
+        System.exec(order);
+        def tarFilename: String;
+        tarFilename = projectName + String(".tar.gz");
+        order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + " " + projectName;
+        System.exec(order);
 
+        def status: String = "new";
+        while 1 {
+            def request: Net.Request(String(HOST) + UPLOAD_PROJECT_PATH));
+            request.authKey = authKey + ":" + status;
+            request.putFile(tarFilename);
+            if request.responseHttpStatus == 200 {
+                Console.print("Deployment successful.\n%s\n", request.responseBody.buf);
+                break;
+            } else if request.responseHttpStatus == 400 {
+                Console.print("Upload failed. File is too big!\n");
+                break;
+            } else if request.responseHttpStatus == 409 {
+                Console.print("Project already exists. Do you want to update it?\nEnter Y/y to update: \n>");
+                def answer: array[Char, 2];
+                Console.getString(answer, 2);
+                if String.isEqual(answer~ptr, "y") or String.isEqual(answer~ptr, "Y") {
+                    status = "old";
+                } else {
+                    break;
                 }
-                else if networkObject.responseHttpStatus == 402{
-                    Console.print("project already exists !project doesn't exists ! do you want to add new project it ?\n press Y/y to update ! \n>");
-                    Console.getString(userAns, 100);
-                    status=String("new");
-                }
-                if(userAns ==String("y") or userAns ==String("Y")){
-                    Fs.readFile(filePath, result~ptr, count~ptr);
-                    text = String.format("%s", result);
-                    text =text + String(":")+status;
-                }
-                else{
+            } else {
+                Console.print("Unexpected error! Retry?\n");
+                def answer: array[Char, 2];
+                Console.getString(answer, 2);
+                if not String.isEqual(answer~ptr, "y") and not String.isEqual(answer~ptr, "Y") {
                     break;
                 }
             }
         }
+        Fs.remove(tarFilename);
     }
 
-    func uploadFiles() {
-        def fp: ptr[Fs.File];
+    func publish() {
+        def fp: ptr[Fs.File] = Fs.openProcess("pwd", "r");
         def path: array[char, 1035];
-        def order: String;
-	    def networkObject: Net.Request(String("http://localhost:8010/api/create-user-upload-token"));
-        order = String("pwd");
-        fp = Fs.openProcess(order.buf, "r");
         Fs.readLine(path~ptr, 1035, fp);
-        def text: String;
-        def fps: ptr[Fs.File];
-        myWorkDir = path~ptr;
         Fs.closeProcess(fp);
-        myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
-        def userName: String = "";
-        def authToken: String = "";
-        filePath = myWorkDir + String("/.deploy.settings");
+        myWorkDir = String(path~ptr).slice(0, myWorkDir.getLength() - 1);
         myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
-        if !Fs.exists(filePath.buf) {
-            Console.print("Enter UserName to be added : \n>");
-            Console.getString(userName, 100);
-            Console.print("Enter User password to be added : \n>");
-            Console.getString(authToken, 100);
-            text = userName + String(":") + authToken + String(":") + projectName;
-	        networkObject.authKey=text;
-            networkObject.post( String("new").buf , filePath.buf);
-            Console.print(networkObject.responseHttpStatus);
-
-            if networkObject.responseHttpStatus == 400{
-                def order : String="rm ";
-                order = order + filePath;
-                System.exec(order.buf);
-                Console.print("Authentication error !");
-            }
-            else if networkObject.responseHttpStatus == 401{
-                def order : String="rm ";
-                order = order + filePath;
-                System.exec(order.buf);
-                Console.print("Wrong UserName or Password !");
-            }
-            else if networkObject.responseHttpStatus == 200{
-                sendData(String("new"),userName,authToken,projectName);
-            }
-            else{
-                def order : String="rm ";
-                order = order + filePath;
-                //System.exec(order.buf);
-                Console.print("Something wrong please try again later !");
-            }
-
-        } else {
-                sendData(String("new"),String(""),String(""),String(""));
-        }
+        uploadProject(getUploadToken());
     }
 }
-Nashir.uploadFiles();
 
+Nashir.publish();
