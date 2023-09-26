@@ -9,6 +9,7 @@ use Srl;
 module Nashir {
     def HOST: "http://localhost:8010";
     def CREATE_UPLOAD_TOKEN_PATH: "/api/create-user-upload-token";
+    def CHECK_UPLOAD_TOKEN_PATH: "/api/check-user-upload-token";
     def UPLOAD_PROJECT_PATH: "/api/upload-project";
 
     def myWorkDir: String;
@@ -16,11 +17,19 @@ module Nashir {
 
     func getUploadToken(): String {
         def authKey: String;
-        def settingsFilePath = myWorkDir + String("/.deploy.settings");
+        def settingsFilePath: String = myWorkDir + String("/.deploy.settings");
         if Fs.exists(settingsFilePath) {
             authKey = Fs.readFile(settingsFilePath);
-            // TODO: Validate authKey in the server.
-            if authKey.split(":").getLength() == 3 return authKey;
+            def request: Net.Request(String(HOST) +String(CHECK_UPLOAD_TOKEN_PATH));
+            request.authKey = authKey
+            request.post("check-user-upload-token");
+            if request.responseHttpStatus == 200 {
+            	return authKey;
+            }
+            else{
+		Console.print("\nerror in auth key !\n");
+                Fs.remove(settingsFilePath);
+	    }
         }
         def userName: array[Char, 100];
         def authToken: array[Char, 100];
@@ -28,18 +37,22 @@ module Nashir {
         Console.getString(userName~ptr, 100);
         Console.print("Enter password: \n>");
         Console.getString(authToken~ptr, 100);
+	def fp : ptr[Fs.File];
+	fp = Fs.openFile(settingsFilePath,"w");
         while 1 {
-            def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH));
+            def request: Net.Request(String(HOST ) + String(CREATE_UPLOAD_TOKEN_PATH));
             request.authKey = String(userName~ptr) + String(":") + authToken~ptr + String(":") + projectName;
-            request.post("new", settingsFilePath.buf);
+            request.post("new"); 
+	    Fs.write(request.responseBody,char~size,request.responseBody.getLength(),fp);
+	    Fs.closeFile(fp);
             if request.responseHttpStatus == 200 {
                 authKey = Fs.readFile(settingsFilePath);
                 if authKey.split(":").getLength() == 3 {
                     break;
-                } else if text.split("&&&&&").getLength() == 2 {
+                } else if authKey.split("&&&&&").getLength() == 2 {
                     Console.print(
                         "Please setup your payment profile by visiting this URL:\n%s\nPress enter when you're done.\n",
-                        text.split("&&&&&")(1).buf
+                        authKey.split("&&&&&")(1).buf
                     );
                     Console.getChar();
                 } else {
@@ -67,10 +80,9 @@ module Nashir {
         tarFilename = projectName + String(".tar.gz");
         order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + " " + projectName;
         System.exec(order);
-
         def status: String = "new";
         while 1 {
-            def request: Net.Request(String(HOST) + UPLOAD_PROJECT_PATH));
+            def request: Net.Request(String(HOST)+ String(UPLOAD_PROJECT_PATH));
             request.authKey = authKey + ":" + status;
             request.putFile(tarFilename);
             if request.responseHttpStatus == 200 {
@@ -82,7 +94,7 @@ module Nashir {
             } else if request.responseHttpStatus == 409 {
                 Console.print("Project already exists. Do you want to update it?\nEnter Y/y to update: \n>");
                 def answer: array[Char, 2];
-                Console.getString(answer, 2);
+                Console.getString(answer~ptr, 2);
                 if String.isEqual(answer~ptr, "y") or String.isEqual(answer~ptr, "Y") {
                     status = "old";
                 } else {
@@ -91,7 +103,7 @@ module Nashir {
             } else {
                 Console.print("Unexpected error! Retry?\n");
                 def answer: array[Char, 2];
-                Console.getString(answer, 2);
+                Console.getString(answer~ptr, 2);
                 if not String.isEqual(answer~ptr, "y") and not String.isEqual(answer~ptr, "Y") {
                     break;
                 }
@@ -105,7 +117,9 @@ module Nashir {
         def path: array[char, 1035];
         Fs.readLine(path~ptr, 1035, fp);
         Fs.closeProcess(fp);
-        myWorkDir = String(path~ptr).slice(0, myWorkDir.getLength() - 1);
+        myWorkDir = String(path~ptr);
+	//remove the \n in the end of string
+        myWorkDir=myWorkDir.slice(0,myWorkDir.getLength()-1);
         myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
         uploadProject(getUploadToken());
     }
