@@ -20,16 +20,15 @@ module Nashir {
         def settingsFilePath: String = myWorkDir + String("/.deploy.settings");
         if Fs.exists(settingsFilePath) {
             authKey = Fs.readFile(settingsFilePath);
-            def request: Net.Request(String(HOST) +String(CHECK_UPLOAD_TOKEN_PATH));
-            request.authKey = authKey
+            def request: Net.Request(String(HOST) + CHECK_UPLOAD_TOKEN_PATH);
+            request.authKey = authKey;
             request.post("check-user-upload-token");
             if request.responseHttpStatus == 200 {
-            	return authKey;
-            }
-            else{
-		Console.print("\nerror in auth key !\n");
+                return authKey;
+            } else {
+                Console.print("\nExisting auth key is no longer valid. Requesting a new auth key.\n");
                 Fs.remove(settingsFilePath);
-	    }
+            }
         }
         def userName: array[Char, 100];
         def authToken: array[Char, 100];
@@ -37,16 +36,13 @@ module Nashir {
         Console.getString(userName~ptr, 100);
         Console.print("Enter password: \n>");
         Console.getString(authToken~ptr, 100);
-	def fp : ptr[Fs.File];
-	fp = Fs.openFile(settingsFilePath,"w");
         while 1 {
-            def request: Net.Request(String(HOST ) + String(CREATE_UPLOAD_TOKEN_PATH));
+            def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH);
             request.authKey = String(userName~ptr) + String(":") + authToken~ptr + String(":") + projectName;
-            request.post("new"); 
-	    Fs.write(request.responseBody,char~size,request.responseBody.getLength(),fp);
-	    Fs.closeFile(fp);
+            request.post("new");
             if request.responseHttpStatus == 200 {
-                authKey = Fs.readFile(settingsFilePath);
+                authKey = request.responseBody;
+                Fs.createFile(settingsFilePath, authKey, authKey.getLength());
                 if authKey.split(":").getLength() == 3 {
                     break;
                 } else if authKey.split("&&&&&").getLength() == 2 {
@@ -82,7 +78,7 @@ module Nashir {
         System.exec(order);
         def status: String = "new";
         while 1 {
-            def request: Net.Request(String(HOST)+ String(UPLOAD_PROJECT_PATH));
+            def request: Net.Request(String(HOST) + UPLOAD_PROJECT_PATH);
             request.authKey = authKey + ":" + status;
             request.putFile(tarFilename);
             if request.responseHttpStatus == 200 {
@@ -118,8 +114,8 @@ module Nashir {
         Fs.readLine(path~ptr, 1035, fp);
         Fs.closeProcess(fp);
         myWorkDir = String(path~ptr);
-	//remove the \n in the end of string
-        myWorkDir=myWorkDir.slice(0,myWorkDir.getLength()-1);
+        // Remove the \n from the end of the string.
+        myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
         myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
         uploadProject(getUploadToken());
     }
