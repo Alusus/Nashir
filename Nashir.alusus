@@ -8,7 +8,7 @@ use Srl;
 
 module Nashir {
     def HOST: "http://localhost:8010";
-    def CREATE_UPLOAD_TOKEN_PATH: "/api/project/create-upload-token";
+    def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
     def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
     def SETUP_PROJECT_PATH: "/api/project/setup";
     def UPLOAD_PROJECT_PATH: "/api/project/upload";
@@ -50,9 +50,12 @@ module Nashir {
             def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH);
             request.authType = "Basic";
             request.authKey = String(userName~ptr) + ":" + password~ptr;
-            request.post("");
+            request.post(String.format(
+                "{\"name\": \"%s\", \"validity\": \"30\"}",
+                Json.encode(projectName).buf
+            ));
             if request.responseHttpStatus == 200 {
-                authKey = request.responseBody;
+                authKey = Json(request.responseBody)("token");
                 Fs.createFile(settingsFilePath, authKey, authKey.getLength());
                 break;
             } else if request.responseHttpStatus == 401 {
