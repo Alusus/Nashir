@@ -2,17 +2,21 @@ import "Srl/Net.alusus";
 import "Srl/Console.alusus";
 import "Srl/System.alusus";
 import "Srl/Fs.alusus";
+import "Build";
 import "Apm";
 Apm.importFile("Alusus/ExtendedNet");
-use Srl;
+Apm.importFile("Alusus/Json");
+Apm.importFile("Alusus/Crypto");
 
 module Nashir {
-    def HOST: "http://localhost:8010";
+    use Srl;
+    def HOST: "https://madeef.ngrok.io";
     def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
     def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
     def SETUP_PROJECT_PATH: "/api/project/setup";
     def UPLOAD_PROJECT_PATH: "/api/project/upload";
 
+    def verbose: Bool(false);
     def myWorkDir: String;
     def projectName: String;
     def settingsFilePath: String;
@@ -48,13 +52,14 @@ module Nashir {
         promptForUserCredentials[];
         while 1 {
             def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH);
+            request.verbose = verbose;
             request.authType = "Basic";
-            request.authKey = String(userName~ptr) + ":" + password~ptr;
+            request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
             request.post(String.format(
                 "{\"name\": \"%s\", \"validity\": \"30\"}",
-                Json.encode(projectName).buf
+                Json.escape(projectName).buf
             ));
-            if request.responseHttpStatus == 200 {
+            if request.responseHttpStatus == 201 {
                 authKey = Json(request.responseBody)("token");
                 Fs.createFile(settingsFilePath, authKey, authKey.getLength());
                 break;
@@ -68,12 +73,13 @@ module Nashir {
         return authKey;
     }
 
-    func setupProject(authkey: String) {
+    func setupProject(authKey: String) {
         def status: String;
         while 1 {
             def request: Net.Request(String.format(
                 "%s%s?project=%s", HOST, GET_PROJECT_STATUS_PATH, Net.uriEncode(projectName).buf
             ));
+            request.verbose = verbose;
             request.authType = "Bearer";
             request.authKey = authKey;
             request.get();
@@ -105,6 +111,7 @@ module Nashir {
             def request: Net.Request(String.format(
                 "%s%s?project=%s", HOST, SETUP_PROJECT_PATH, Net.uriEncode(projectName).buf
             ));
+            request.verbose = verbose;
             request.authType = "Bearer";
             request.authKey = authKey;
             request.post("");
@@ -125,9 +132,9 @@ module Nashir {
     }
 
     func uploadProject(authKey: String) {
-        def order: String = "alusus main.alusus build";
+        def order: String = String("rm -rf ") + projectName;
         System.exec(order);
-        order = String.format("mv Build ") + projectName;
+        order = String("mv Build ") + projectName;
         System.exec(order);
         def tarFilename: String;
         tarFilename = projectName + String(".tar.gz");
@@ -137,6 +144,7 @@ module Nashir {
             def request: Net.Request(String.format(
                 "%s%s?project=%s", HOST, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
             ));
+            request.verbose = verbose;
             request.authKey = authKey;
             request.authType = "Bearer";
             request.putFile(tarFilename);
@@ -150,7 +158,7 @@ module Nashir {
                 Console.print("Unexpected error. Try re-starting the deployment.\n>");
                 System.exit(1);
             } else if request.responseHttpStatus == 401 {
-                handle401Errorp[];
+                handle401Error[];
             } else {
                 handleUnexpectedCommunicationError[];
             }
@@ -172,6 +180,58 @@ module Nashir {
         setupProject(authToken);
         uploadProject(authToken);
     }
-}
 
-Nashir.publish();
+    func build [start: ast_ref] (assets: Array[String], deps: Array[String]) {
+        def i: Int;
+        for i = 0, i < assets.getLength(), ++i {
+            System.exec(String.format("cp -r %s Build/", assets(i).buf));
+        }
+        def exe: Build.Exe(start~ast، String("Build/start"));
+        exe.addDependencies(deps);
+        if exe.generate() {
+            Console.print("Build complete.\n");
+        } else {
+            System.fail(1، "Build failed.");
+        }
+    }
+
+    macro initialize {
+        Srl.System.exec("mkdir -p Build");
+        Srl.System.exec("rm -rf Build/*");
+        WebPlatform.mainAssetsPath = "Build/Assets/";
+        WebPlatform.uiEndpointsPath = "Build/UiEndpoints/";
+    }
+
+    macro startup[startExe, startJit, assets, deps] {
+        if Process.argCount == 3 {
+            def arg: CharsPtr = Process.args~cnt(Process.argCount - 1);
+            if String.isEqual(arg، "build") {
+                Nashir.build[startExe](assets, deps);
+            } else if String.isEqual(arg, "publish") {
+                Nashir.build[startExe](assets, deps);
+                Nashir.publish();
+            } else {
+                Console.print(
+                    "Error: Invalid argument\n"
+                    "Usage:\n"
+                    "  alusus <main_alusus_file> [build|publish]\n"
+                );
+            }
+        } else {
+            startJit();
+        }
+    }
+
+    macro startup[start, assets, deps] {
+        @expname[main]
+        func _main (argCount: Int، args: ptr[array[CharsPtr]]): Int {
+            mainAssetsPath = "Assets/";
+            uiEndpointsPath = "UiEndpoints/";
+
+            start();
+            return 0;
+        }
+
+        Nashir.startup[_main, start, assets, deps];
+    }
+}
