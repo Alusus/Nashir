@@ -1,0 +1,17 @@
+اشمل "Nashir"؛
+اشمل "Srl/Fs"؛
+اشمل "مـحا"؛
+مـحا.اشمل_ملف("Alusus/I18n")؛
+
+عرف نـاشر: لقب Nashir؛
+@دمج وحدة نـاشر {
+    عرف nashirPath: نـص(هات_مجلد_هذه_الشفرة[])؛
+    عرف إطناب: لقب verbose؛
+    ماكرو هيئ {
+        I18n.initialize(Fs.readFile(Nashir.nashirPath + "ar.po"));
+        Nashir.initialize[]؛
+    }
+    عرف ابدأ: لقب startup؛
+    عرف ابن: لقب build؛
+    عرف انشر: لقب publish؛
+}

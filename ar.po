@@ -1,0 +1,58 @@
+msgid "Unexpected communication error! Retry?\n"
+msgstr "خطأ غير متوقع في الاتصال. أترغب بإعادة المحاولة؟\n"
+
+msgid "\nExisting auth key is no longer valid. Requesting a new auth key.\n"
+msgstr "\nمفتاح التوثيق الحالي غير صالح. سيُطلب مفتاح جديد.\n"
+
+msgid "Enter username: \n>"
+msgstr "أدخل اسم المستخدم: \n>"
+
+msgid "Enter password: \n>"
+msgstr "أدخل كلمة السر: \n>"
+
+msgid "Authentication error. Invalid username or password.\n"
+msgstr "خطأ في المصادقة. اسم المستخدم أو كلمة السر غير صالحة.\n"
+
+msgid "Existing project with the same name exists. The project will be overwritten. Continue?\n"
+msgstr "يوجد مشروع حالي بنفس الاسم. ستؤدي العملية لاستبداله بالنسخة الجديدة. أترغب بالاستمرار؟\n"
+
+msgid "Existing, but inactive, project with the same name exists. "
+"The project will be re-activated and overwritten. Continue?\n"
+msgstr "يوجد مشروع حالي بنفس الاسم لكنه غير مُفعل. ستؤدي العملية إلى تفعيله وتحديث شفرته. أترغب بالاستمرار؟\n"
+
+msgid "No existing project found with the same name. New project will be created. Continue?\n"
+msgstr "لا يوجد مشروع بهذا الاسم. ستؤدي العملية لإنشاء مشروع جديد. أترغب بالاستمرار؟\n"
+
+msgid "Please setup your payment profile by visiting this URL:\n%s\nPress enter when you're done.\n"
+msgstr "يُرجى ضبط إعدادات الدفع عبر هذا الرابط:\n%s\nاضغط زر الإدخال عند الانتهاء.\n"
+
+msgid "Deployment successful.\n%s\n"
+msgstr "تم النشر بنجاح.\n%s\n"
+
+msgid "Upload failed. File is too big!\n"
+msgstr "فشل التحميل. الملف أكبر من الحجم الأقصى!\n"
+
+msgid "Unexpected error. Try re-starting the deployment.\n"
+msgstr "خطأ غير متوقع. يُرجى إعادة تشغيل عملية النشر.\n"
+
+msgid "Build complete.\n"
+msgstr "اكتمل البناء.\n"
+
+msgid "Error: Invalid argument\n"
+"Usage:\n"
+"  alusus <main_alusus_file> [build|publish]\n"
+msgstr "خطأ: المعطى غير صالح\n"
+"طريقة الاستخدام:\n"
+"  الأسس <اسم_الملف_الرئيسي> [ابن|انشر]\n"
+
+msgid "نعم"
+msgstr "yes"
+
+msgid "لا"
+msgstr "no"
+
+msgid "ابن"
+msgstr "build"
+
+msgid "انشر"
+msgstr "publish"
