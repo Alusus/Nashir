@@ -106,16 +106,16 @@ module Nashir {
         }
         if status == "active" {
             Console.print(
-                I18n.string("Existing project with the same name exists. The project will be overwritten. Continue?\n")
+                I18n.string("Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? ")
             );
         } else if status == "inactive" {
             Console.print(I18n.string(
                 "Existing, but inactive, project with the same name exists. "
-                "The project will be re-activated and overwritten. Continue?\n"
+                "The project will be re-activated and overwritten. Continue (yes/no)? "
             ));
         } else {
             Console.print(
-                I18n.string("No existing project found with the same name. New project will be created. Continue?\n")
+                I18n.string("No existing project found with the same name. New project will be created. Continue (yes/no)? ")
             );
         }
         if getUserYesNoAnswer() != "yes" {
@@ -173,6 +173,11 @@ module Nashir {
             } else if request.responseHttpStatus == 404 {
                 Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
                 System.exit(1);
+            } else if request.responseHttpStatus == 423 {
+                Console.print(I18n.string("Some operation is currently in progress on this project's container. Retry (yes/no)? "));
+                if getUserYesNoAnswer() != "yes" {
+                    System.exit(1);
+                }
             } else if request.responseHttpStatus == 401 {
                 handle401Error[];
             } else {

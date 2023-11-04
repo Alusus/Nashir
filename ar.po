@@ -13,15 +13,18 @@ msgstr "أدخل كلمة السر: \n>"
 msgid "Authentication error. Invalid username or password.\n"
 msgstr "خطأ في المصادقة. اسم المستخدم أو كلمة السر غير صالحة.\n"
 
-msgid "Existing project with the same name exists. The project will be overwritten. Continue?\n"
-msgstr "يوجد مشروع حالي بنفس الاسم. ستؤدي العملية لاستبداله بالنسخة الجديدة. أترغب بالاستمرار؟\n"
+msgid "Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? "
+msgstr "يوجد مشروع حالي بنفس الاسم. ستؤدي العملية لاستبداله بالنسخة الجديدة. أترغب بالاستمرار (نعم/لا)؟ "
 
 msgid "Existing, but inactive, project with the same name exists. "
-"The project will be re-activated and overwritten. Continue?\n"
-msgstr "يوجد مشروع حالي بنفس الاسم لكنه غير مُفعل. ستؤدي العملية إلى تفعيله وتحديث شفرته. أترغب بالاستمرار؟\n"
+"The project will be re-activated and overwritten. Continue (yes/no)? "
+msgstr "يوجد مشروع حالي بنفس الاسم لكنه غير مُفعل. ستؤدي العملية إلى تفعيله وتحديث شفرته. أترغب بالاستمرار (نعم/لا)؟ "
 
-msgid "No existing project found with the same name. New project will be created. Continue?\n"
-msgstr "لا يوجد مشروع بهذا الاسم. ستؤدي العملية لإنشاء مشروع جديد. أترغب بالاستمرار؟\n"
+msgid "No existing project found with the same name. New project will be created. Continue (yes/no)? "
+msgstr "لا يوجد مشروع بهذا الاسم. ستؤدي العملية لإنشاء مشروع جديد. أترغب بالاستمرار (نعم/لا)؟ "
+
+msgid "Some operation is currently in progress on this project's container. Retry (yes/no)? "
+msgstr "بعض العمليات تتم حاليًا في الخادم على هذا المشروع ويجب الانتظار حتى تكتمل تلك العمليات. إعادة المحاولة (نعم/لا)؟ "
 
 msgid "Please setup your payment profile by visiting this URL:\n%s\nPress enter when you're done.\n"
 msgstr "يُرجى ضبط إعدادات الدفع عبر هذا الرابط:\n%s\nاضغط زر الإدخال عند الانتهاء.\n"
