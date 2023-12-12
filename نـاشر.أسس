@@ -14,4 +14,5 @@
     عرف ابدأ: لقب startup؛
     عرف ابن: لقب build؛
     عرف انشر: لقب publish؛
+    عرف أنشئ_مدخل_تنفيذ: لقب createStartExe؛
 }

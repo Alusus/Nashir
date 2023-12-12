@@ -67,3 +67,34 @@ alusus main.alusus publish
 When you run the publish command the library will request the username and password for your AlususNet
 account and will then publish your app and run it. Follow the instructions to complete the publishing.
 
+## Reference
+
+### createStartExe
+
+Helper macro to create an executable's entry function. This function will set the UI and main assets
+paths before calling the main function. This macro takes two arguments:
+* name: The name of the function to be created.
+* startJit: The name of the function to call after setting the paths. This would be the function
+  that starts the server, which is usually the function called to start the server when running
+  in JIT mode.
+
+### build
+
+Function to build the project. This will compile the code and generate the executable as well as
+copy the needed asset files to the build directory. This function is called by the `startup` macro.
+
+```
+func build [start: ast_ref] (assets: Array[String], deps: Array[String])
+```
+
+Arguments:
+* `start`: Template arg. An AST reference to the program's entry point function.
+* `assets`: The list of asset files/folders. These assets are assumed to be relative to the current
+  directory and will be copied to the `Build/` directory with the same relative path.
+* `deps`: The list of all shared library dependencies of the project.
+
+### publish
+
+Function to publish the project to Alusus Net. The project has to be built first using the `build`
+function before callign this library. This function is called by the `startup` macro.
+

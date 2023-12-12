@@ -216,6 +216,17 @@ module Nashir {
         }
     }
 
+    macro createStartExe[name, startJit] {
+        @expname[main]
+        func name (argCount: Int، args: ptr[array[CharsPtr]]): Int {
+            mainAssetsPath = "Assets/";
+            uiEndpointsPath = "UiEndpoints/";
+
+            startJit();
+            return 0;
+        }
+    }
+
     macro initialize {
         Srl.System.exec("mkdir -p Build");
         Srl.System.exec("rm -rf Build/*");
@@ -244,15 +255,7 @@ module Nashir {
     }
 
     macro startup[start, assets, deps] {
-        @expname[main]
-        func _main (argCount: Int، args: ptr[array[CharsPtr]]): Int {
-            mainAssetsPath = "Assets/";
-            uiEndpointsPath = "UiEndpoints/";
-
-            start();
-            return 0;
-        }
-
+        Nashir.createStartExe[_main, start];
         Nashir.startup[_main, start, assets, deps];
     }
 }
