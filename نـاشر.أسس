@@ -7,6 +7,9 @@
 @دمج وحدة نـاشر {
     عرف nashirPath: نـص(هات_مجلد_هذه_الشفرة[])؛
     عرف إطناب: لقب verbose؛
+    عرف اسم_المشروع: لقب projectName؛
+    عرف الموارد: لقب assets؛
+    عرف الاعتماديات: لقب dependencies؛
     ماكرو هيئ {
         I18n.initialize(Fs.readFile(Nashir.nashirPath + "ar.po"));
         Nashir.initialize[]؛

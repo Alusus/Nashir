@@ -11,19 +11,25 @@ Apm.importFile("Alusus/I18n");
 
 module Nashir {
     use Srl;
-    def HOST: "https://madeef.ngrok.io";
     def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
     def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
     def SETUP_PROJECT_PATH: "/api/project/setup";
     def UPLOAD_PROJECT_PATH: "/api/project/upload";
+    def HOST: "https://alusus.net";
+    def host: String(CharsPtr().{
+        this = System.getEnv("NASHIR_HOST");
+        if this == 0 this = HOST;
+    });
 
     def verbose: Bool(false);
     def myWorkDir: String;
     def projectName: String;
     def settingsFilePath: String;
+    def assets: Array[String];
+    def dependencies: Array[String];
 
     macro handleUnexpectedCommunicationError {
-        Console.print(I18n.string("Unexpected communication error! Retry?\n"));
+        Console.print(I18n.string("Unexpected communication error! Retry? "));
         if getUserYesNoAnswer() != "yes" {
             System.exit(1);
         }
@@ -63,7 +69,7 @@ module Nashir {
         }
         promptForUserCredentials[];
         while 1 {
-            def request: Net.Request(String(HOST) + CREATE_UPLOAD_TOKEN_PATH);
+            def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
             request.verbose = verbose;
             request.authType = "Basic";
             request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
@@ -89,7 +95,7 @@ module Nashir {
         def status: String;
         while 1 {
             def request: Net.Request(String.format(
-                "%s%s?project=%s", HOST, GET_PROJECT_STATUS_PATH, Net.uriEncode(projectName).buf
+                "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(projectName).buf
             ));
             request.verbose = verbose;
             request.authType = "Bearer";
@@ -123,7 +129,7 @@ module Nashir {
         }
         while 1 {
             def request: Net.Request(String.format(
-                "%s%s?project=%s", HOST, SETUP_PROJECT_PATH, Net.uriEncode(projectName).buf
+                "%s%s?project=%s", host.buf, SETUP_PROJECT_PATH, Net.uriEncode(projectName).buf
             ));
             request.verbose = verbose;
             request.authType = "Bearer";
@@ -158,11 +164,12 @@ module Nashir {
         System.exec(order);
         while 1 {
             def request: Net.Request(String.format(
-                "%s%s?project=%s", HOST, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
+                "%s%s?project=%s", host.buf, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
             ));
             request.verbose = verbose;
             request.authKey = authKey;
             request.authType = "Bearer";
+            request.contentType = "application/octet-stream";
             request.putFile(tarFilename);
             if request.responseHttpStatus == 200 {
                 Console.print(I18n.string("Deployment successful.\n%s\n"), request.responseBody.buf);
@@ -195,20 +202,22 @@ module Nashir {
         myWorkDir = String(path~ptr);
         // Remove the \n from the end of the string.
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
-        myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
+        if projectName == "" {
+            myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
+        }
         settingsFilePath = myWorkDir + String("/.deploy.settings");
         def authToken: String = getUploadToken();
         setupProject(authToken);
         uploadProject(authToken);
     }
 
-    func build [start: ast_ref] (assets: Array[String], deps: Array[String]) {
+    func build [start: ast_ref] () {
         def i: Int;
         for i = 0, i < assets.getLength(), ++i {
             System.exec(String.format("cp -r %s Build/", assets(i).buf));
         }
         def exe: Build.Exe(start~ast، String("Build/start"));
-        exe.addDependencies(deps);
+        exe.addDependencies(dependencies);
         if exe.generate() {
             Console.print(I18n.string("Build complete.\n"));
         } else {
@@ -234,13 +243,13 @@ module Nashir {
         WebPlatform.uiEndpointsPath = "Build/UiEndpoints/";
     }
 
-    macro startup[startExe, startJit, assets, deps] {
+    macro startup[startExe, startJit] {
         if Process.argCount == 3 {
             def arg: CharsPtr = Process.args~cnt(Process.argCount - 1);
             if I18n.string(arg) == "build" {
-                Nashir.build[startExe](assets, deps);
+                Nashir.build[startExe]();
             } else if I18n.string(arg) == "publish" {
-                Nashir.build[startExe](assets, deps);
+                Nashir.build[startExe]();
                 Nashir.publish();
             } else {
                 Console.print(I18n.string(
@@ -254,8 +263,8 @@ module Nashir {
         }
     }
 
-    macro startup[start, assets, deps] {
+    macro startup[start] {
         Nashir.createStartExe[_main, start];
-        Nashir.startup[_main, start, assets, deps];
+        Nashir.startup[_main, start];
     }
 }
