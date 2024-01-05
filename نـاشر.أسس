@@ -11,7 +11,7 @@
     عرف الموارد: لقب assets؛
     عرف الاعتماديات: لقب dependencies؛
     ماكرو هيئ {
-        I18n.initialize(Fs.readFile(Nashir.nashirPath + "ar.po"));
+        I18n.initializeStrings(Fs.readFile(Nashir.nashirPath + "ar.po"));
         Nashir.initialize[]؛
     }
     عرف ابدأ: لقب startup؛
