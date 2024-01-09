@@ -34,16 +34,25 @@ Nashir.verbose = false;
 Nashir.initialize[];
 ```
 
-* Call the startup macro after the initialize call, giving it the name of the main function (the
-  function that starts the server), an array with paths for assets needed by the app, and an
-  array with the list of build dependencies.
+* Set the project name. If the project name is not set the current directory name will be used as
+  the project name.
 
 ```
-Nashir.startup[
-    startServer,
-    Array[String]({ String("Assets") }),
-    WebPlatform.getBuildDependencies()
-];
+Nashir.projectName = "MyProject";
+```
+
+* Set the the list of assets and build dependencies.
+
+```
+Nashir.assets.add({ String("Assets") });
+Nashir.dependencies.add(WebPlatform.getBuildDependencies());
+```
+
+* Call the startup macro, giving it the name of the main function (the
+  function that starts the server).
+
+```
+Nashir.startup[startServer];
 ```
 
 * After finishing these steps you'll be able to run the app directly:
