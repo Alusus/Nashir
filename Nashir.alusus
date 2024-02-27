@@ -15,6 +15,7 @@ module Nashir {
     def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
     def SETUP_PROJECT_PATH: "/api/project/setup";
     def UPLOAD_PROJECT_PATH: "/api/project/upload";
+    def BATCH_SIZE: 102400; // 100 KB
     def HOST: "https://alusus.net";
     def host: String(CharsPtr().{
         this = System.getEnv("NASHIR_HOST");
@@ -162,36 +163,59 @@ module Nashir {
         tarFilename = projectName + String(".tar.gz");
         order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + " " + projectName;
         System.exec(order);
+        def buffer: UnqRef[array[Char, BATCH_SIZE]];
+        buffer.construct();
         while 1 {
-            def request: Net.Request(String.format(
-                "%s%s?project=%s", host.buf, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
-            ));
-            request.verbose = verbose;
-            request.authKey = authKey;
-            request.authType = "Bearer";
-            request.contentType = "application/octet-stream";
-            request.putFile(tarFilename);
-            if request.responseHttpStatus == 200 {
-                Console.print(I18n.string("Deployment successful.\n%s\n"), request.responseBody.buf);
-                break;
-            } else if request.responseHttpStatus == 400 {
-                Console.print(I18n.string("Upload failed. File is too big!\n"));
-                break;
-            } else if request.responseHttpStatus == 404 {
-                Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
-                System.exit(1);
-            } else if request.responseHttpStatus == 423 {
-                Console.print(I18n.string("Some operation is currently in progress on this project's container. Retry (yes/no)? "));
-                if getUserYesNoAnswer() != "yes" {
+            def fp: ptr[Fs.File] = Fs.openFile(tarFilename, "rb");
+            Fs.seek(fp, 0, Fs.Seek.END);
+            def totalSize: ArchInt = Fs.tell(fp);
+            Fs.seek(fp, 0, Fs.Seek.SET);
+            def startOffset: ArchInt = 0;
+            while startOffset < totalSize {
+                Console.print("Uploading: %d%%\r", (startOffset * 100 / totalSize)~cast[Int]);
+                Fs.flush(0~cast[ptr[Fs.File]]);
+                def batchSize: ArchInt = Fs.read(buffer, 1, BATCH_SIZE, fp);
+                if batchSize == 0 {
+                    Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
                     System.exit(1);
                 }
-            } else if request.responseHttpStatus == 401 {
-                handle401Error[];
-            } else {
-                handleUnexpectedCommunicationError[];
+                def request: Net.Request(String.format(
+                    "%s%s?project=%s", host.buf, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
+                ));
+                request.verbose = verbose;
+                request.authKey = authKey;
+                request.authType = "Bearer";
+                request.contentType = "application/octet-stream";
+                request.addHeader(String.format("Content-Total-Length: %i", totalSize~cast[Int]));
+                request.addHeader(String.format("Content-Start-Offset: %i", startOffset~cast[Int]));
+                request.put(buffer, batchSize);
+                if request.responseHttpStatus == 200 {
+                    startOffset += batchSize;
+                } else if request.responseHttpStatus == 400 {
+                    Console.print(I18n.string("Upload failed. File is too big!\n"));
+                    System.exit(1);
+                } else if request.responseHttpStatus == 404 {
+                    Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
+                    System.exit(1);
+                } else if request.responseHttpStatus == 423 {
+                    Console.print(I18n.string("Some operation is currently in progress on this project's container. Retry (yes/no)? "));
+                    if getUserYesNoAnswer() != "yes" {
+                        System.exit(1);
+                    }
+                    continue 2;
+                } else if request.responseHttpStatus == 401 {
+                    handle401Error[];
+                    continue 2;
+                } else {
+                    handleUnexpectedCommunicationError[];
+                    continue 2;
+                }
             }
+            Console.print("Uploading: 100%\n");
+            break;
         }
         Fs.remove(tarFilename);
+        Console.print(I18n.string("Deployment successful.\n"));
     }
 
     func publish() {
