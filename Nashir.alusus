@@ -172,7 +172,8 @@ module Nashir {
             Fs.seek(fp, 0, Fs.Seek.SET);
             def startOffset: ArchInt = 0;
             while startOffset < totalSize {
-                Console.print("Uploading: %d%%\r", (startOffset * 100 / totalSize)~cast[Int]);
+                Console.print(I18n.string("Uploading: %d%%"), (startOffset * 100 / totalSize)~cast[Int]);
+                Console.print("\r");
                 Fs.flush(0~cast[ptr[Fs.File]]);
                 def batchSize: ArchInt = Fs.read(buffer, 1, BATCH_SIZE, fp);
                 if batchSize == 0 {
@@ -211,7 +212,8 @@ module Nashir {
                     continue 2;
                 }
             }
-            Console.print("Uploading: 100%\n");
+            Console.print(I18n.string("Uploading: %d%%"), 100);
+            Console.print("\n");
             break;
         }
         Fs.remove(tarFilename);
