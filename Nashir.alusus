@@ -161,7 +161,7 @@ module Nashir {
         System.exec(order);
         def tarFilename: String;
         tarFilename = projectName + String(".tar.gz");
-        order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + " " + projectName;
+        order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + "/" + projectName + " .";
         System.exec(order);
         def buffer: UnqRef[array[Char, BATCH_SIZE]];
         buffer.construct();
