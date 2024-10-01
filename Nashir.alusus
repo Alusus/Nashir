@@ -25,6 +25,7 @@ module Nashir {
     def verbose: Bool(false);
     def myWorkDir: String;
     def projectName: String;
+    def servicePort: Int;
     def settingsFilePath: String;
     def assets: Array[String];
     def dependencies: Array[String];
@@ -181,7 +182,8 @@ module Nashir {
                     System.exit(1);
                 }
                 def request: Net.Request(String.format(
-                    "%s%s?project=%s", host.buf, UPLOAD_PROJECT_PATH, Net.uriEncode(projectName).buf
+                    "%s%s?project=%s&port=%i", host.buf, UPLOAD_PROJECT_PATH,
+                    Net.uriEncode(projectName).buf, servicePort
                 ));
                 request.verbose = verbose;
                 request.authKey = authKey;
@@ -262,11 +264,13 @@ module Nashir {
         }
     }
 
-    macro initialize {
+    macro initialize[prjName, svcPort] {
         Srl.System.exec("mkdir -p Build");
         Srl.System.exec("rm -rf Build/*");
         WebPlatform.mainAssetsPath = "Build/Assets/";
         WebPlatform.uiEndpointsPath = "Build/UiEndpoints/";
+        Nashir.projectName = prjName;
+        Nashir.servicePort = svcPort;
     }
 
     macro startup[startExe, startJit] {

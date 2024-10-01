@@ -27,18 +27,13 @@ func startServer {
 ```
 
 * Initialize the Nashir library in your project. You can set the `verbose` value to true to get more
-  info during the process.
+  info during the process. The first arg of the `initialize` macro is the name of the project, while
+  the second argument is the port number at which the server is initialized. The project name is
+  used to set the name of the published project on Alusus Net.
 
 ```
 Nashir.verbose = false;
-Nashir.initialize[];
-```
-
-* Set the project name. If the project name is not set the current directory name will be used as
-  the project name.
-
-```
-Nashir.projectName = "MyProject";
+Nashir.initialize["<ProjectName>", 8000];
 ```
 
 * Set the the list of assets and build dependencies.
