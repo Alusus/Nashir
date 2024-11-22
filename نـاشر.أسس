@@ -10,9 +10,9 @@
     عرف اسم_المشروع: لقب projectName؛
     عرف الموارد: لقب assets؛
     عرف الاعتماديات: لقب dependencies؛
-    ماكرو هيئ {
+    ماكرو هيئ[اسم_المشروع، رقم_المنفذ] {
         I18n.initializeStrings(Fs.readFile(Nashir.nashirPath + "ar.po"));
-        Nashir.initialize[]؛
+        Nashir.initialize[اسم_المشروع، رقم_المنفذ]؛
     }
     عرف ابدأ: لقب startup؛
     عرف ابن: لقب build؛
