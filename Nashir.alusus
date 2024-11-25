@@ -106,6 +106,8 @@ module Nashir {
             if request.responseHttpStatus == 200 {
                 status = request.responseBody;
                 break;
+            } else if request.responseHttpStatus == 400 {
+                System.fail(1, I18n.string("Project name is not valid.\n"));
             } else if request.responseHttpStatus == 401 {
                 handle401Error[];
             } else {
@@ -156,13 +158,13 @@ module Nashir {
     }
 
     func uploadProject(authKey: String) {
-        def order: String = String("rm -rf ") + projectName;
+        def order: String = String("rm -rf \"") + projectName + "\"";
         System.exec(order);
-        order = String("mv Build ") + projectName;
+        order = String("mv Build \"") + projectName + "\"";
         System.exec(order);
         def tarFilename: String;
         tarFilename = projectName + String(".tar.gz");
-        order = String("tar cvzf  ") + tarFilename + "  -C " + myWorkDir + "/" + projectName + " .";
+        order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + projectName + "\" .";
         System.exec(order);
         def buffer: UnqRef[array[Char, BATCH_SIZE]];
         buffer.construct();
@@ -242,7 +244,7 @@ module Nashir {
     func build [start: ast_ref] () {
         def i: Int;
         for i = 0, i < assets.getLength(), ++i {
-            System.exec(String.format("cp -r %s Build/", assets(i).buf));
+            System.exec(String.format("cp -r \"%s\" Build/", assets(i).buf));
         }
         def exe: Build.Exe(start~ast، String("Build/start"));
         exe.addDependencies(dependencies);
