@@ -9,219 +9,61 @@ Apm.importFile("Alusus/Json");
 Apm.importFile("Alusus/Crypto");
 Apm.importFile("Alusus/I18n");
 
-module Nashir {
+import "Drivers/Driver";
+
+@merge module Nashir {
     use Srl;
-    def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
-    def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
-    def SETUP_PROJECT_PATH: "/api/project/setup";
-    def UPLOAD_PROJECT_PATH: "/api/project/upload";
-    def BATCH_SIZE: 102400; // 100 KB
-    def HOST: "https://alusus.net";
-    def host: String(CharsPtr().{
-        this = System.getEnv("NASHIR_HOST");
-        if this == 0 this = HOST;
-    });
 
     def verbose: Bool(false);
     def myWorkDir: String;
-    def projectName: String;
-    def servicePort: Int;
-    def settingsFilePath: String;
     def assets: Array[String];
     def dependencies: Array[String];
+    def driver: SrdRef[Driver];
 
     macro handleUnexpectedCommunicationError {
         Console.print(I18n.string("Unexpected communication error! Retry? "));
-        if getUserYesNoAnswer() != "yes" {
+        if getUserYesNoAnswer(String()) != "yes" {
             System.exit(1);
         }
     }
 
-    macro handle401Error {
-        Console.print(I18n.string("\nExisting auth key is no longer valid. Requesting a new auth key.\n"));
-        Fs.remove(settingsFilePath);
-        authKey = getUploadToken();
+    func getUserYesNoAnswer(prompt: String): String {
+        return getUserMultipleOptionsAnswer(prompt, Map[String, String]()
+            .set(String("yes"), String("yes"))
+            .set(String("y"), String("yes"))
+            .set(String("no"), String("no"))
+            .set(String("n"), String("no"))
+        );
     }
 
-    func getUserYesNoAnswer(): String {
+    func getUserMultipleOptionsAnswer(prompt: String, options: Map[String, String]): String {
         def ret: String;
         while 1 {
+            if prompt != "" Console.print(prompt);
             def answer: array[Char, 100];
             Console.getString(answer~ptr, 100);
             ret = I18n.string(answer~ptr).toLowerCase();
-            if ret == "y" ret = "yes";
-            if ret == "n" ret = "no";
-            if ret == "yes" or ret == "no" break;
+            if options.findPos(ret) == -1 {
+                Console.print(I18n.string("Invalid entry.\n"));
+                continue;
+            }
+            ret = options(ret);
+            break;
         }
         return ret;
     }
 
-    func getUploadToken(): String {
-        def authKey: String;
-        if Fs.exists(settingsFilePath) {
-            return Fs.readFile(settingsFilePath);
-        }
-        def userName: array[Char, 100];
-        def password: array[Char, 100];
-        macro promptForUserCredentials {
-            Console.print(I18n.string("Enter username: \n>"));
-            Console.getString(userName~ptr, 100);
-            Console.print(I18n.string("Enter password: \n>"));
-            Console.getString(password~ptr, 100);
-        }
-        promptForUserCredentials[];
+    func getUserTextAnswer(prompt: String, allowEmpty: Bool): String {
+        def result: String;
         while 1 {
-            def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
-            request.verbose = verbose;
-            request.authType = "Basic";
-            request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
-            request.post(String.format(
-                "{\"name\": \"%s\", \"validity\": \"30\"}",
-                Json.escape(projectName).buf
-            ));
-            if request.responseHttpStatus == 201 {
-                authKey = Json(request.responseBody)("token");
-                Fs.createFile(settingsFilePath, authKey, authKey.getLength());
-                break;
-            } else if request.responseHttpStatus == 401 {
-                Console.print(I18n.string("Authentication error. Invalid username or password.\n"));
-                promptForUserCredentials[];
-            } else {
-                handleUnexpectedCommunicationError[];
-            }
+            if prompt != "" Console.print(prompt);
+            def answer: array[Char, 1024];
+            Console.getString(answer~ptr, 1024);
+            result = String(answer~ptr).trim();
+            if result != "" or allowEmpty break;
+            Console.print(I18n.string("Invalid entry.\n"));
         }
-        return authKey;
-    }
-
-    func setupProject(authKey: String) {
-        def status: String;
-        while 1 {
-            def request: Net.Request(String.format(
-                "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(projectName).buf
-            ));
-            request.verbose = verbose;
-            request.authType = "Bearer";
-            request.authKey = authKey;
-            request.get();
-            if request.responseHttpStatus == 200 {
-                status = request.responseBody;
-                break;
-            } else if request.responseHttpStatus == 400 {
-                System.fail(1, I18n.string("Project name is not valid.\n"));
-            } else if request.responseHttpStatus == 401 {
-                handle401Error[];
-            } else {
-                handleUnexpectedCommunicationError[];
-            }
-        }
-        if status == "active" {
-            Console.print(
-                I18n.string("Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? ")
-            );
-        } else if status == "inactive" {
-            Console.print(I18n.string(
-                "Existing, but inactive, project with the same name exists. "
-                "The project will be re-activated and overwritten. Continue (yes/no)? "
-            ));
-        } else {
-            Console.print(
-                I18n.string("No existing project found with the same name. New project will be created. Continue (yes/no)? ")
-            );
-        }
-        if getUserYesNoAnswer() != "yes" {
-            System.exit(1);
-        }
-        while 1 {
-            def request: Net.Request(String.format(
-                "%s%s?project=%s", host.buf, SETUP_PROJECT_PATH, Net.uriEncode(projectName).buf
-            ));
-            request.verbose = verbose;
-            request.authType = "Bearer";
-            request.authKey = authKey;
-            request.post("");
-            if request.responseHttpStatus == 200 {
-                break;
-            } else if request.responseHttpStatus == 402 {
-                Console.print(
-                    I18n.string(
-                        "Please setup your payment profile by visiting this URL:\n%s\nPress enter when you're done.\n"
-                    ),
-                    request.responseBody.buf
-                );
-                Console.getChar();
-            } else if request.responseHttpStatus == 401 {
-                handle401Error[];
-            } else {
-                handleUnexpectedCommunicationError[];
-            }
-        }
-    }
-
-    func uploadProject(authKey: String) {
-        def order: String = String("rm -rf \"") + projectName + "\"";
-        System.exec(order);
-        order = String("mv Build \"") + projectName + "\"";
-        System.exec(order);
-        def tarFilename: String;
-        tarFilename = projectName + String(".tar.gz");
-        order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + projectName + "\" .";
-        System.exec(order);
-        def buffer: UnqRef[array[Char, BATCH_SIZE]];
-        buffer.construct();
-        while 1 {
-            def fp: ptr[Fs.File] = Fs.openFile(tarFilename, "rb");
-            Fs.seek(fp, 0, Fs.Seek.END);
-            def totalSize: ArchInt = Fs.tell(fp);
-            Fs.seek(fp, 0, Fs.Seek.SET);
-            def startOffset: ArchInt = 0;
-            while startOffset < totalSize {
-                Console.print(I18n.string("Uploading: %d%%"), (startOffset * 100 / totalSize)~cast[Int]);
-                Console.print("\r");
-                Fs.flush(0~cast[ptr[Fs.File]]);
-                def batchSize: ArchInt = Fs.read(buffer, 1, BATCH_SIZE, fp);
-                if batchSize == 0 {
-                    Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
-                    System.exit(1);
-                }
-                def request: Net.Request(String.format(
-                    "%s%s?project=%s&port=%i", host.buf, UPLOAD_PROJECT_PATH,
-                    Net.uriEncode(projectName).buf, servicePort
-                ));
-                request.verbose = verbose;
-                request.authKey = authKey;
-                request.authType = "Bearer";
-                request.contentType = "application/octet-stream";
-                request.addHeader(String.format("Content-Total-Length: %i", totalSize~cast[Int]));
-                request.addHeader(String.format("Content-Start-Offset: %i", startOffset~cast[Int]));
-                request.put(buffer, batchSize);
-                if request.responseHttpStatus == 200 {
-                    startOffset += batchSize;
-                } else if request.responseHttpStatus == 400 {
-                    Console.print(I18n.string("Upload failed. File is too big!\n"));
-                    System.exit(1);
-                } else if request.responseHttpStatus == 404 {
-                    Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
-                    System.exit(1);
-                } else if request.responseHttpStatus == 423 {
-                    Console.print(I18n.string("Some operation is currently in progress on this project's container. Retry (yes/no)? "));
-                    if getUserYesNoAnswer() != "yes" {
-                        System.exit(1);
-                    }
-                    continue 2;
-                } else if request.responseHttpStatus == 401 {
-                    handle401Error[];
-                    continue 2;
-                } else {
-                    handleUnexpectedCommunicationError[];
-                    continue 2;
-                }
-            }
-            Console.print(I18n.string("Uploading: %d%%"), 100);
-            Console.print("\n");
-            break;
-        }
-        Fs.remove(tarFilename);
-        Console.print(I18n.string("Deployment successful.\n"));
+        return result;
     }
 
     func publish() {
@@ -232,13 +74,7 @@ module Nashir {
         myWorkDir = String(path~ptr);
         // Remove the \n from the end of the string.
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
-        if projectName == "" {
-            myWorkDir.split("/").{ projectName = this(this.getLength() - 1) };
-        }
-        settingsFilePath = myWorkDir + String("/.deploy.settings");
-        def authToken: String = getUploadToken();
-        setupProject(authToken);
-        uploadProject(authToken);
+        driver.publish();
     }
 
     func build [start: ast_ref] () {
@@ -251,7 +87,7 @@ module Nashir {
         if exe.generate() {
             Console.print(I18n.string("Build complete.\n"));
         } else {
-            System.fail(1، "Build failed.");
+            System.fail(1، I18n.string("Build failed."));
         }
     }
 
@@ -266,13 +102,12 @@ module Nashir {
         }
     }
 
-    macro initialize[prjName, svcPort] {
+    macro initialize[driverInit] {
         Srl.System.exec("mkdir -p Build");
         Srl.System.exec("rm -rf Build/*");
         WebPlatform.mainAssetsPath = "Build/Assets/";
         WebPlatform.uiEndpointsPath = "Build/UiEndpoints/";
-        Nashir.projectName = prjName;
-        Nashir.servicePort = svcPort;
+        Nashir.driver = driverInit;
     }
 
     macro startup[startExe, startJit] {

@@ -1,0 +1,88 @@
+@merge module Nashir {
+    class SshDriver {
+        @injection def driver: Driver;
+
+        def username: String;
+        def host: String;
+        def port: Int;
+        def serverPath: String;
+        def serviceName: String;
+
+        handler this~init() {
+        }
+
+        handler this~init(username: String, host: String, port: Int, serverPath: String, serviceName: String) {
+            this.username = username;
+            this.host = host;
+            this.port = port;
+            this.serverPath = serverPath;
+            this.serviceName = serviceName;
+        }
+
+        handler this_type(): SrdRef[Driver] {
+            return SrdRef[SshDriver]()~use_in(driver) no_injection {
+                driver.alloc()~init();
+            };
+        }
+
+        handler this_type(username: String, host: String, port: Int, serverPath: String): SrdRef[Driver] {
+            return SrdRef[SshDriver]()~use_in(driver) no_injection {
+                driver.alloc()~init(username, host, port, serverPath, String());
+            };
+        }
+
+        handler this_type(username: String, host: String, port: Int, serverPath: String, serviceName: String): SrdRef[Driver] {
+            return SrdRef[SshDriver]()~use_in(driver) no_injection {
+                driver.alloc()~init(username, host, port, serverPath, serviceName);
+            };
+        }
+
+        handler (this:Driver).publish() set_ptr {
+            if this.username == "" this.enterInfo();
+
+            // Upload the program to the server.
+            def command: String = String.format("rsync -avhr -e 'ssh -p %i' ./Build/* %s@%s:%s"،
+                this.port،
+                this.username.buf،
+                this.host.buf،
+                this.serverPath.buf);
+            if System.exec(command) != 0 {
+                System.fail(1، I18n.string("Publishing failed: Uploading to the server failed."));
+            }
+            Console.print(I18n.string("Program uploaded.\n"));
+            // Restarting the service.
+            if this.serviceName != "" {
+                command = String.format("ssh -p %i %s@%s 'systemctl restart %s'"،
+                    this.port،
+                    this.username.buf،
+                    this.host.buf,
+                    this.serviceName.buf
+                );
+                if System.exec(command) != 0 {
+                    System.fail(1، I18n.string("Publishing failed: Restarting the service failed."));
+                }
+                Console.print(I18n.string("Service restarted.\n"));
+            }
+            Console.print(I18n.string("Publishing completed successfully.\n"));
+        }
+
+        handler this.enterInfo() {
+            this.username = getUserTextAnswer(I18n.string("Enter SSH username to use for publishing: "), false);
+            this.host = getUserTextAnswer(I18n.string("Enter SSH host to use for publishing: "), false);
+            while 1 {
+                this.port = String.parseInt(getUserTextAnswer(
+                    I18n.string("Enter SSH port to use for publishing: "), false)
+                );
+                if this.port == 0 Console.print(I18n.string("Invalid port number.\n"))
+                else break;
+            }
+            this.serverPath = getUserTextAnswer(I18n.string(
+                "Enter path on the server where the code will be published: "), false
+            );
+            this.serviceName = getUserTextAnswer(I18n.string(
+                "Enter the name of the systemd service to be restarted after publishing, "
+                "or leave this empty to skip service restarting: "
+            ), true);
+        }
+    }
+}

@@ -7,15 +7,16 @@
 @دمج وحدة نـاشر {
     عرف nashirPath: نـص(هات_مجلد_هذه_الشفرة[])؛
     عرف إطناب: لقب verbose؛
-    عرف اسم_المشروع: لقب projectName؛
     عرف الموارد: لقب assets؛
     عرف الاعتماديات: لقب dependencies؛
-    ماكرو هيئ[اسم_المشروع، رقم_المنفذ] {
+    ماكرو هيئ[مهيئ_المشغل] {
         I18n.initializeStrings(Fs.readFile(Nashir.nashirPath + "ar.po"));
-        Nashir.initialize[اسم_المشروع، رقم_المنفذ]؛
+        Nashir.initialize[مهيئ_المشغل]؛
     }
     عرف ابدأ: لقب startup؛
     عرف ابن: لقب build؛
     عرف انشر: لقب publish؛
     عرف أنشئ_مدخل_تنفيذ: لقب createStartExe؛
+
+    عرف مـشغل: لقب Driver؛
 }
