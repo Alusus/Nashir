@@ -1,0 +1,5 @@
+@merge module Nashir {
+    class Driver {
+        handler this.publish() as_ptr;
+    }
+}
