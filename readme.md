@@ -1,17 +1,26 @@
 # Nashir
 [[عربي]](readme.ar.md)
 
-A library that enables buildign and publishing web apps to AlususNet hosting service.
+A library that enables buildign and publishing web apps. It's uses a driver based design to enable
+supporting multiple publishing methods or publishing targets. There are currently two drivers, one
+for publishing on AlususNet service, and the other for publishing using SSH protocol.
 
 ## Usage
 
 These steps assumes that you already have an app built using WebPlatform and you want to publish it.
 
-* Add the Nashir library to the project:
+* Add the Nashir library to the project, including the requested driver:
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir");
+Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "Drivers/AlususNet.alusus" });
+```
+
+or to use SSh driver:
+
+```
+import "Apm";
+Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "Drivers/Ssh.alusus" });
 ```
 
 * Create a main function for starting the web server. Make sure to run the server on port 8000 and
@@ -27,13 +36,14 @@ func startServer {
 ```
 
 * Initialize the Nashir library in your project. You can set the `verbose` value to true to get more
-  info during the process. The first arg of the `initialize` macro is the name of the project, while
-  the second argument is the port number at which the server is initialized. The project name is
-  used to set the name of the published project on Alusus Net.
+  info during the process. The arg of the `initialize` macro is the instantation statement of the
+  driver used for publishing. Instantiating the driver may require providing arguments. For example
+  the Alusus Net driver requires two args: the name of the project and the port number at which the
+  server is initialized. The project name is used to set the name of the published project on Alusus Net.
 
 ```
 Nashir.verbose = false;
-Nashir.initialize["<ProjectName>", 8000];
+Nashir.initialize[Nashir.AlususNetDriver(String("&lt;ProjectName&gt;"), 8000)];
 ```
 
 * Set the the list of assets and build dependencies.
@@ -99,6 +109,45 @@ Arguments:
 
 ### publish
 
-Function to publish the project to Alusus Net. The project has to be built first using the `build`
-function before callign this library. This function is called by the `startup` macro.
+Function to publish the project usign the driver selected during initialization. The project has to
+be built first using the `build` function before callign this library. This function is called by
+the `startup` macro.
+
+### Drivers
+
+#### AlususNetDriver
+
+For publishing the project to Alusus Net. To initialize:
+
+```
+AlususNetDriver(projectName: String, servicePort: Int);
+```
+
+The first argument is the name of the project on Alusus Net.
+The second argument is the port number the project uses when initializing the HTTP server.
+
+### SshDriver
+
+Used to publish the project using SSH to any service supporting SSH. To initialize the driver:
+
+```
+SshDriver();
+SshDriver(
+    username: String,
+    host: String,
+    port: Int,
+    serverPath: String,
+    serviceName: String
+);
+```
+
+The first format let the driver ask the user in the console for the information needed for
+publishing, while the second format provides those info programmatically.
+
+The first three arguments are the info used for the SSH protocol. The fourth argument is
+the path on the server where the uploaded files will be stored.
+
+The fifth argument is optional, and it's the name of the systemd service used to run
+the project. If this argument is provided that systemd service will be restarted
+after publishing.
 
