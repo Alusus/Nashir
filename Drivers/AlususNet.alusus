@@ -18,6 +18,7 @@
         def servicePort: Int;
         def settingsFilePath: String;
         def products: Json;
+        def authKey: String;
 
         handler this~init(projectName: String, servicePort: Int) {
             this.projectName = projectName;
@@ -33,15 +34,15 @@
         handler (this:Driver).publish() set_ptr {
             this.settingsFilePath = myWorkDir + String("/.deploy.settings");
             this.fetchProducts();
-            def authToken: String = this.getUploadToken();
-            this.setupProject(authToken);
-            this.uploadProject(authToken);
+            this.fetchUploadToken();
+            this.setupProject();
+            this.uploadProject();
         }
 
         macro handle401Error {
             Console.print(I18n.string("\nExisting auth key is no longer valid. Requesting a new auth key.\n"));
             Fs.remove(this.settingsFilePath);
-            authKey = this.getUploadToken();
+            this.fetchUploadToken();
         }
 
         handler this.fetchProducts() {
@@ -70,10 +71,9 @@
             return Json();
         }
 
-        handler this.getUploadToken(): String {
-            def authKey: String;
+        handler this.fetchUploadToken() {
             if Fs.exists(this.settingsFilePath) {
-                return Fs.readFile(this.settingsFilePath);
+                this.authKey = Fs.readFile(this.settingsFilePath);
             }
             def userName: array[Char, 100];
             def password: array[Char, 100];
@@ -90,12 +90,12 @@
                 request.authType = "Basic";
                 request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
                 request.post(String.format(
-                    "{\"name\": \"%s\", \"validity\": \"30\"}",
+                    "{\"name\": \"%s\", \"validity\": 30}",
                     Json.escape(this.projectName).buf
                 ));
                 if request.responseHttpStatus == 201 {
-                    authKey = Json(request.responseBody)("token");
-                    Fs.createFile(this.settingsFilePath, authKey, authKey.getLength());
+                    this.authKey = Json(request.responseBody)("token");
+                    Fs.createFile(this.settingsFilePath, this.authKey, this.authKey.getLength());
                     break;
                 } else if request.responseHttpStatus == 401 {
                     Console.print(I18n.string("Authentication error. Invalid username or password.\n"));
@@ -104,10 +104,9 @@
                     handleUnexpectedCommunicationError[];
                 }
             }
-            return authKey;
         }
 
-        handler this.setupProject(authKey: String) {
+        handler this.setupProject() {
             def status: String;
             def productId: String;
             def promotionCode: String;
@@ -117,7 +116,7 @@
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
-                request.authKey = authKey;
+                request.authKey = this.authKey;
                 request.get();
                 if request.responseHttpStatus == 200 {
                     request.responseBody.split("&").{
@@ -234,7 +233,7 @@
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
-                request.authKey = authKey;
+                request.authKey = this.authKey;
                 request.post("");
                 if request.responseHttpStatus == 200 {
                     break;
@@ -274,7 +273,7 @@
             }
         }
 
-        handler this.uploadProject(authKey: String) {
+        handler this.uploadProject() {
             def order: String = String("rm -rf \"") + this.projectName + "\"";
             System.exec(order);
             order = String("mv Build \"") + this.projectName + "\"";
@@ -305,7 +304,7 @@
                         Net.uriEncode(this.projectName).buf, this.servicePort
                     ));
                     request.verbose = verbose;
-                    request.authKey = authKey;
+                    request.authKey = this.authKey;
                     request.authType = "Bearer";
                     request.contentType = "application/octet-stream";
                     request.addHeader(String.format("Content-Total-Length: %i", totalSize~cast[Int]));
