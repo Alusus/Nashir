@@ -4,11 +4,13 @@
 
         def GET_PRODUCTS: "/api/products";
         def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
+        def CREATE_AUTH_TOKEN_PATH: "/api/login";
+        def CREATE_AUTH_TOKEN_WITH_MFA_PATH: "/api/user/verify-mfa";
         def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
         def SETUP_PROJECT_PATH: "/api/project/setup";
         def UPLOAD_PROJECT_PATH: "/api/project/upload";
         def BATCH_SIZE: 102400; // 100 KB
-        def HOST: "https://alusus.net";
+        def HOST: "http://localhost:8400";
         @shared def host: String(CharsPtr().{
             this = System.getEnv("NASHIR_HOST");
             if this == 0 this = HOST;
@@ -85,10 +87,57 @@
             }
             promptForUserCredentials[];
             while 1 {
+                def request: Net.Request(host + CREATE_AUTH_TOKEN_PATH);
+                request.verbose = verbose;
+                // added no captcha to bypass captcha
+                request.post(String.format("{\"captchaToken\": \"noCaptcha\", \"username\":\"%s\", \"password\":\"%s\"}",userName~ptr,password~ptr));
+                if request.responseHttpStatus == 200 {
+                    authKey = request.responseBody;
+                    return this.getUploadToken(authKey);
+                } else if request.responseHttpStatus == 202 {
+                    return this.getUploadTokenWithMfa();
+                }  else if request.responseHttpStatus == 401 {
+                    Console.print(I18n.string("Authentication error. Invalid username or password.\n"));
+                    promptForUserCredentials[];
+                } else {
+                    handleUnexpectedCommunicationError[];
+                }
+            }
+            return this.getUploadToken(authKey);
+        }
+
+        handler this.getUploadTokenWithMfa(): String {
+            def authKey: String;
+            def twoFACode: array[Char, 100];
+            macro promptForUser2FA{
+                Console.print(I18n.string("Please enter 2FA auth code we sent to your email: \n>"));
+                Console.getString(twoFACode~ptr, 100);
+            }
+            promptForUser2FA[];
+            while 1 {
+                def request: Net.Request(host + CREATE_AUTH_TOKEN_WITH_MFA_PATH );
+                request.verbose = verbose;
+                request.post(String.format("{\"code\": \"%s\"}",String(twoFACode~ptr).buf));
+                if request.responseHttpStatus == 200 {
+                    authKey = request.responseBody;
+                    return this.getUploadToken(authKey);
+                }  else if request.responseHttpStatus == 401 {
+                    Console.print(I18n.string("Authentication error. Invalid code.\n"));
+                    promptForUser2FA[];
+                } else {
+                    handleUnexpectedCommunicationError[];
+                }
+            }
+            return this.getUploadToken(authKey);
+        }
+
+        handler this.getUploadToken(authToken : String): String {
+            def authKey: String;
+            while 1 {
                 def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
                 request.verbose = verbose;
-                request.authType = "Basic";
-                request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
+                request.authType = "Bearer";
+                request.authKey = authToken;
                 request.post(String.format(
                     "{\"name\": \"%s\", \"validity\": \"30\"}",
                     Json.escape(this.projectName).buf
@@ -98,8 +147,8 @@
                     Fs.createFile(this.settingsFilePath, authKey, authKey.getLength());
                     break;
                 } else if request.responseHttpStatus == 401 {
-                    Console.print(I18n.string("Authentication error. Invalid username or password.\n"));
-                    promptForUserCredentials[];
+                    Console.print(I18n.string("Authentication error. Invalid Token.\n"));
+                    this.getUploadToken();
                 } else {
                     handleUnexpectedCommunicationError[];
                 }

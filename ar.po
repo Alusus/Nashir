@@ -10,8 +10,14 @@ msgstr "أدخل اسم المستخدم: \n>"
 msgid "Enter password: \n>"
 msgstr "أدخل كلمة السر: \n>"
 
+msgid "Please enter 2FA auth code we sent to your email: \n>"
+msgstr "يرجى إدخال رمز المصادقة الثنائية الذي أرسلناه إلى بريدك الإلكتروني.:\n>"
+
 msgid "Authentication error. Invalid username or password.\n"
 msgstr "خطأ في المصادقة. اسم المستخدم أو كلمة السر غير صالحة.\n"
+
+msgid "Authentication error. Invalid code.\n"
+msgstr "خطأ في المصادقة. الرمز غير صالحة.\n"
 
 msgid "Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? "
 msgstr "يوجد مشروع حالي بنفس الاسم. ستؤدي العملية لاستبداله بالنسخة الجديدة. أترغب بالاستمرار (نعم/لا)؟ "
