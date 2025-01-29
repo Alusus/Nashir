@@ -41,10 +41,16 @@
             this.settingsFilePath = myWorkDir + String("/.deploy.settings");
             def homeDir: String = System.getEnv("HOME");
             this.trustedTokenPath = homeDir + String("/.alnashir.token");
-            this.fetchProducts();
-            this.fetchUploadToken();
-            this.setupProject();
-            this.uploadProject();
+            if checkProjectName(this.projectName)
+            {
+                this.fetchProducts();
+                this.fetchUploadToken();
+                this.setupProject();
+                this.uploadProject();
+            } else {
+                Console.print(I18n.string("Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen \n"));
+            }
+
         }
 
         macro handle401Error {
@@ -120,7 +126,7 @@
                             Console.print(I18n.string("Authentication error. Invalid  password.\n"));
                             promptForPassword[];
                         } else if request.responseHttpStatus == 429 {
-                            Console.print(I18n.string("The account is locked due to multiple incorrect password attempts. Please try again later."));
+                            Console.print(I18n.string("The account is locked due to multiple incorrect password attempts. Please try again later.\n"));
                         } else {
                             handleUnexpectedCommunicationError[];
                         }
@@ -158,7 +164,7 @@
                             }
                         }else {
                         if request.responseHttpStatus == 400 {
-                            Console.print(I18n.string("Entered information is invalid!"));
+                            Console.print(I18n.string("Entered information is invalid!\n"));
                             promptForUserName[];
                         } else if request.responseHttpStatus == 401 {
                             Console.print(I18n.string("Authentication error. Invalid  userName.\n"));
@@ -197,7 +203,7 @@
                             Fs.createFile(this.settingsFilePath, data, data.getLength());
                             break;
                         } else if request.responseHttpStatus == 401 {
-                            Console.print(I18n.string("Authentication error. \n"));
+                            Console.print(I18n.string("Authentication error.\n"));
                             this.fetchAuthToken();
                         } else {
                             handleUnexpectedCommunicationError[];
@@ -479,6 +485,14 @@
                 result.append('.');
                 result._append((fractions * 100.0f64 + 0.5f64)~cast[Int[64]], 2);
                 return result;
+            }
+
+            func checkProjectName(projectName : String): bool {
+                def matcher :Regex.Matcher("^[a-z0-9\\-]+$");
+
+                if matcher.match(projectName.buf).getLength()>0 return true;
+
+                return false;
             }
         }
     }
