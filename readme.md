@@ -1,69 +1,61 @@
 # Nashir
 [[عربي]](readme.ar.md)
 
-A library that enables buildign and publishing web apps. It's uses a driver based design to enable
-supporting multiple publishing methods or publishing targets. There are currently two drivers, one
-for publishing on AlususNet service, and the other for publishing using SSH protocol.
+A library to facilitate building and deploying projects. This library is designed to allow the
+addition of drivers for various hosting services. Currently, two drivers are available: one
+specifically for the Alusus Net service, and another general-purpose driver that relies on
+the SSH protocol for project deployment.
 
 ## Usage
 
-These steps assumes that you already have an app built using WebPlatform and you want to publish it.
+These steps assume you already have a web application and want to publish it.
 
 * Add the Nashir library to the project, including the requested driver:
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "Drivers/AlususNet.alusus" });
+Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
 ```
 
 or to use SSh driver:
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "Drivers/Ssh.alusus" });
+Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
 ```
 
-* Create a main function for starting the web server. Make sure to run the server on port 8000 and
-  make sure to wait after starting the server so that the program doesn't quit immediately.
-
-```
-func startServer {
-    Console.print("Starting server on port 8000...\n");
-    startServer({ "listening_ports", "8000", "static_file_max_age", "0" });
-    Console.print("Server is running.\n");
-    while 1 System.sleep(1000000);
-}
-```
-
-* Initialize the Nashir library in your project. You can set the `verbose` value to true to get more
-  info during the process. The arg of the `initialize` macro is the instantation statement of the
-  driver used for publishing. Instantiating the driver may require providing arguments. For example
-  the Alusus Net driver requires two args: the name of the project and the port number at which the
-  server is initialized. The project name is used to set the name of the published project on Alusus Net.
+* Configure the Nashir library at the end of your program using the setup macro. You can set the
+  verbose value to 1 to get more detailed information during project deployment. The macro takes
+  a single argument, which is an object of the Config class. This macro will handle configuring
+  the Nashir settings and the ProgArg library settings, which Nashir uses to process user inputs.
+  If the program uses the Web Platform library, this macro will also create the two main functions
+  responsible for starting the program and running the server, unless the user provides these
+  functions themselves. Nashir requires two separate functions: one to run the server directly
+  without building, and another to serve as the program's entry point in case of building.
 
 ```
 Nashir.verbose = false;
-Nashir.initialize[Nashir.AlususNetDriver(String("&lt;ProjectName&gt;"), 8000)];
+Nashir.setup[Nashir.Config().{
+    projectName = "Chat";
+    projectVersion = "v1";
+    serverPort = 8000;
+    assets.add(String("Assets"));
+    publishDriver = Nashir.AlususNetPublishDriver();
+}];
 ```
 
-* Set the the list of assets and build dependencies.
+* Nashir relies on the ProgArg library to parse program arguments. After calling the setup macro,
+  Nashir will have completed the initialization of commands in ProgArg, and you can now ask ProgArg
+  to process user inputs.
 
 ```
-Nashir.assets.add({ String("Assets") });
-Nashir.dependencies.add(WebPlatform.getBuildDependencies());
-```
-
-* Call the startup macro, giving it the name of the main function (the
-  function that starts the server).
-
-```
-Nashir.startup[startServer];
+ProgArg.parse(2);
 ```
 
 * After finishing these steps you'll be able to run the app directly:
 
 ```
-alusus main.alusus
+alusus main.alusus start
 ```
 
 And you can build an executable app:
@@ -78,19 +70,38 @@ And you can publish the app to AlususNet using the `publish` command:
 alusus main.alusus publish
 ```
 
-When you run the publish command the library will request the username and password for your AlususNet
-account and will then publish your app and run it. Follow the instructions to complete the publishing.
+When calling the publish command, the library will build an executable version of the project,
+then prompt you to log in to your Alusus Net account, upload the project to the server, and
+run it automatically. Follow the instructions that appear to complete the deployment.
 
 ## Reference
 
-### createStartExe
+### Config
 
-Helper macro to create an executable's entry function. This function will set the UI and main assets
-paths before calling the main function. This macro takes two arguments:
-* name: The name of the function to be created.
-* startJit: The name of the function to call after setting the paths. This would be the function
-  that starts the server, which is usually the function called to start the server when running
-  in JIT mode.
+The class contains the following variables:
+
+* `projectName: String
+
+* `projectVersion: String`
+* `serverPort: Int`
+* `serverOptions: Array[CharsPtr]` - This parameter is used to specify the Http server options if
+  we ask Nashir to create the two main functions.
+* `webPlatformMainAssetsPath: String` - The path to the main assets required by the Web Platform
+  library. Ignored if Nashir is not asked to create the two main functions.
+* `webPlatformUiEndpointsPath: String` - The path to the UI endpoints files required by the Web
+  Platform library. Ignored if Nashir is not asked to create the two main functions.
+* `assets: Array[String]` - A list of paths to resources used by the program. These resources will
+  be included with the project when building and deploying.
+* `dependencies: Array[String]` - A list of libraries required by the project during building.
+* `publishDriver: SrdRef[PublishDriver]` - The driver used to publish the project.
+* `serverModules: ref[TiObject]` - A reference to the module or modules required by the Web Platform
+  during the project's execution and building.
+* `startJit: ref[TiObject]` - A reference to the server startup function for direct execution. If
+  this function is not provided and the project uses the Web Platform, Nashir will create the
+  function itself.
+* `startExe: ref[TiObject]` - A reference to the program entry point function used when creating an
+  executable version of the project. If this function is not provided and the project uses the Web
+  Platform, Nashir will create the function itself.
 
 ### build
 
@@ -98,20 +109,18 @@ Function to build the project. This will compile the code and generate the execu
 copy the needed asset files to the build directory. This function is called by the `startup` macro.
 
 ```
-func build [start: ast_ref] (assets: Array[String], deps: Array[String])
+func build [start: ast_ref, modules: ast_ref] ()
 ```
 
 Arguments:
 * `start`: Template arg. An AST reference to the program's entry point function.
-* `assets`: The list of asset files/folders. These assets are assumed to be relative to the current
-  directory and will be copied to the `Build/` directory with the same relative path.
-* `deps`: The list of all shared library dependencies of the project.
+* `modules`: A template parameter pointing to the module or modules containing the server endpoints.
 
 ### publish
 
-Function to publish the project usign the driver selected during initialization. The project has to
-be built first using the `build` function before callign this library. This function is called by
-the `startup` macro.
+A function to publish the project using the driver specified during initialization. The project must
+be built using the `build` function before calling this function. This function is called automatically
+when requesting project deployment using Nashir's standard method.
 
 ### Drivers
 
@@ -120,11 +129,8 @@ the `startup` macro.
 For publishing the project to Alusus Net. To initialize:
 
 ```
-AlususNetDriver(projectName: String, servicePort: Int);
+AlususNetDriver();
 ```
-
-The first argument is the name of the project on Alusus Net.
-The second argument is the port number the project uses when initializing the HTTP server.
 
 ### SshDriver
 

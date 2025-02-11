@@ -1,6 +1,6 @@
 @merge module Nashir {
-    class AlususNetDriver {
-        @injection def driver: Driver;
+    class AlususNetPublishDriver {
+        @injection def driver: PublishDriver;
 
         def GET_PRODUCTS: "/api/products";
         def CREATE_UPLOAD_TOKEN_PATH: "/api/upload-token";
@@ -14,24 +14,18 @@
             if this == 0 this = HOST;
         });
 
-        def projectName: String;
-        def servicePort: Int;
         def settingsFilePath: String;
         def products: Json;
         def authKey: String;
 
-        handler this~init(projectName: String, servicePort: Int) {
-            this.projectName = projectName;
-            this.servicePort = servicePort;
+        handler this~init() {
         }
 
-        handler this_type(projectName: String, servicePort: Int): SrdRef[Driver] {
-            return SrdRef[AlususNetDriver]()~use_in(driver) no_injection {
-                driver.alloc()~init(projectName, servicePort);
-            };
+        handler this_type(): SrdRef[PublishDriver] {
+            return SrdRef[AlususNetPublishDriver].construct();
         }
 
-        handler (this:Driver).publish() set_ptr {
+        handler (this:PublishDriver).publish() set_ptr {
             this.settingsFilePath = myWorkDir + String("/.deploy.settings");
             this.fetchProducts();
             this.fetchUploadToken();
@@ -40,7 +34,7 @@
         }
 
         macro handle401Error {
-            Console.print(I18n.string("\nExisting auth key is no longer valid. Requesting a new auth key.\n"));
+            Console.print(i18nOut("\nExisting auth key is no longer valid. Requesting a new auth key.\n"));
             Fs.remove(this.settingsFilePath);
             this.fetchUploadToken();
         }
@@ -53,7 +47,7 @@
                 if request.responseHttpStatus == 200 {
                     this.products = request.responseBody;
                     if this.products.getLength() < 1 {
-                        System.fail(1, I18n.string("Failed to fetch product info from AlususNet\n"));
+                        System.fail(1, i18nOut("Failed to fetch product info from AlususNet\n"));
                     }
                     break;
                 } else {
@@ -78,9 +72,9 @@
             def userName: array[Char, 100];
             def password: array[Char, 100];
             macro promptForUserCredentials {
-                Console.print(I18n.string("Enter username: \n>"));
+                Console.print(i18nOut("Enter username: \n>"));
                 Console.getString(userName~ptr, 100);
-                Console.print(I18n.string("Enter password: \n>"));
+                Console.print(i18nOut("Enter password: \n>"));
                 Console.getString(password~ptr, 100);
             }
             promptForUserCredentials[];
@@ -91,14 +85,14 @@
                 request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
                 request.post(String.format(
                     "{\"name\": \"%s\", \"validity\": 30}",
-                    Json.escape(this.projectName).buf
+                    Json.escape(config.projectName).buf
                 ));
                 if request.responseHttpStatus == 201 {
                     this.authKey = Json(request.responseBody)("token");
                     Fs.createFile(this.settingsFilePath, this.authKey, this.authKey.getLength());
                     break;
                 } else if request.responseHttpStatus == 401 {
-                    Console.print(I18n.string("Authentication error. Invalid username or password.\n"));
+                    Console.print(i18nOut("Authentication error. Invalid username or password.\n"));
                     promptForUserCredentials[];
                 } else {
                     handleUnexpectedCommunicationError[];
@@ -112,7 +106,7 @@
             def promotionCode: String;
             while 1 {
                 def request: Net.Request(String.format(
-                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(this.projectName).buf
+                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(config.projectName).buf
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
@@ -125,7 +119,7 @@
                     };
                     break;
                 } else if request.responseHttpStatus == 400 {
-                    System.fail(1, I18n.string("Project name is not valid.\n"));
+                    System.fail(1, i18nOut("Project name is not valid.\n"));
                 } else if request.responseHttpStatus == 401 {
                     handle401Error[];
                 } else {
@@ -133,7 +127,7 @@
                 }
             }
             if status == "active" {
-                Console.print(I18n.string(
+                Console.print(i18nOut(
                     "Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? "
                 ));
                 if getUserYesNoAnswer(String()) != "yes" {
@@ -142,23 +136,23 @@
             } else if status == "inactive" {
                 def product: Json = this.findProduct(productId);
                 if product.getLength() == 0 {
-                    System.fail(1, I18n.string(
+                    System.fail(1, i18nOut(
                         "Existing, but inactive, project with the same name exists. "
                         "This project is in an invalid state and cannot be re-activated. "
                         "Contact AlususNet's support to resolve the issue, or change your "
                         "project's name to create a new project on AlususNet.\n"
                     ));
                 }
-                Console.print(I18n.string(
+                Console.print(i18nOut(
                     "Existing, but inactive, project with the same name exists. "
                     "The project will be re-activated and overwritten. "
                     "A new payment plan will be setup.\n"
                 ));
-                Console.print(I18n.string("Hosting plan:\n"));
+                Console.print(i18nOut("Hosting plan:\n"));
                 Console.print(getProductInfoString(product));
                 while 1 {
                     def answer: String = getUserMultipleOptionsAnswer(
-                        I18n.string(
+                        i18nOut(
                             "Continue? (Type `yes` to proceed, `no` to cancel, "
                             "or `coupon` to enter a promotion code) "
                         ),
@@ -175,17 +169,17 @@
                     } else if answer == "no" {
                         System.exit(1);
                     } else if answer == "coupon" {
-                        promotionCode = getUserTextAnswer(I18n.string("Enter promotion code: "), true);
+                        promotionCode = getUserTextAnswer(i18nOut("Enter promotion code: "), true);
                     }
                 }
             } else {
                 def product: Json = this.products(0);
                 productId = product("id");
-                Console.print(I18n.string(
+                Console.print(i18nOut(
                     "No existing project found with the same name. "
                     "A new project will be created and a payment plan will be setup for it.\n"
                 ));
-                Console.print(I18n.string("Hosting plan:\n"));
+                Console.print(i18nOut("Hosting plan:\n"));
                 Console.print(getProductInfoString(product));
                 def options: Map[String, String]() = Map[String, String]()
                     .set(String("yes"), String("yes"))
@@ -196,7 +190,7 @@
                     .set(String("c"), String("coupon"));
                 def prompt: String;
                 if this.products.getLength() > 1 {
-                    prompt = I18n.string(
+                    prompt = i18nOut(
                         "Continue? (Type `yes` to proceed, `no` to cancel, "
                         "`plan` to change the hosting plan, "
                         "or `coupon` to enter a promotion code) "
@@ -205,7 +199,7 @@
                         .set(String("plan"), String("plan"))
                         .set(String("p"), String("plan"))
                 } else {
-                    prompt = I18n.string(
+                    prompt = i18nOut(
                         "Continue? (Type `yes` to proceed, `no` to cancel, "
                         "or `coupon` to enter a promotion code) "
                     );
@@ -219,7 +213,7 @@
                     } else if answer == "plan" {
                         productId = this.selectProduct();
                     } else if answer == "coupon" {
-                        promotionCode = getUserTextAnswer(I18n.string("Enter promotion code: "), true);
+                        promotionCode = getUserTextAnswer(i18nOut("Enter promotion code: "), true);
                     }
                 }
             }
@@ -227,7 +221,7 @@
                 def request: Net.Request(String.format(
                     "%s%s?project=%s&product=%s&promotion_code=%s",
                     host.buf, SETUP_PROJECT_PATH,
-                    Net.uriEncode(this.projectName).buf,
+                    Net.uriEncode(config.projectName).buf,
                     Net.uriEncode(productId).buf,
                     Net.uriEncode(promotionCode).buf
                 ));
@@ -239,7 +233,7 @@
                     break;
                 } else if request.responseHttpStatus == 402 {
                     Console.print(
-                        I18n.string(
+                        i18nOut(
                             "Please setup your payment profile by visiting this URL:\n"
                             "%s\nPress enter when you're done.\n"
                         ),
@@ -248,7 +242,7 @@
                     Console.getChar();
                 } else if request.responseHttpStatus == 400 and request.responseBody == "promotion_code" {
                     def answer: String = getUserMultipleOptionsAnswer(
-                        I18n.string(
+                        i18nOut(
                             "Provided promotion code is invalid. Re-enter prmotion code? "
                             "(Type `yes` to enter a new code or `cancel` to quit) "
                         ),
@@ -259,7 +253,7 @@
                             .set(String("c"), String("cancel"))
                     );
                     if answer == "yes" {
-                        promotionCode = getUserTextAnswer(I18n.string(
+                        promotionCode = getUserTextAnswer(i18nOut(
                             "Enter promotion code or leave empty to proceed without a promotion code: "
                         ), true);
                     } else if answer == "cancel" {
@@ -274,13 +268,13 @@
         }
 
         handler this.uploadProject() {
-            def order: String = String("rm -rf \"") + this.projectName + "\"";
+            def order: String = String("rm -rf \"") + config.projectName + "\"";
             System.exec(order);
-            order = String("mv Build \"") + this.projectName + "\"";
+            order = String("mv Build \"") + config.projectName + "\"";
             System.exec(order);
             def tarFilename: String;
-            tarFilename = this.projectName + String(".tar.gz");
-            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + this.projectName + "\" .";
+            tarFilename = config.projectName + String(".tar.gz");
+            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + config.projectName + "\" .";
             System.exec(order);
             def buffer: UnqRef[array[Char, BATCH_SIZE]];
             buffer.construct();
@@ -291,17 +285,17 @@
                 Fs.seek(fp, 0, Fs.Seek.SET);
                 def startOffset: ArchInt = 0;
                 while startOffset < totalSize {
-                    Console.print(I18n.string("Uploading: %d%%"), (startOffset * 100 / totalSize)~cast[Int]);
+                    Console.print(i18nOut("Uploading: %d%%"), (startOffset * 100 / totalSize)~cast[Int]);
                     Console.print("\r");
                     Fs.flush(0~cast[ptr[Fs.File]]);
                     def batchSize: ArchInt = Fs.read(buffer, 1, BATCH_SIZE, fp);
                     if batchSize == 0 {
-                        Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
+                        Console.print(i18nOut("Unexpected error. Try re-starting the deployment.\n"));
                         System.exit(1);
                     }
                     def request: Net.Request(String.format(
                         "%s%s?project=%s&port=%i", host.buf, UPLOAD_PROJECT_PATH,
-                        Net.uriEncode(this.projectName).buf, this.servicePort
+                        Net.uriEncode(config.projectName).buf, config.serverPort
                     ));
                     request.verbose = verbose;
                     request.authKey = this.authKey;
@@ -313,13 +307,13 @@
                     if request.responseHttpStatus == 200 {
                         startOffset += batchSize;
                     } else if request.responseHttpStatus == 400 {
-                        Console.print(I18n.string("Upload failed. File is too big!\n"));
+                        Console.print(i18nOut("Upload failed. File is too big!\n"));
                         System.exit(1);
                     } else if request.responseHttpStatus == 404 {
-                        Console.print(I18n.string("Unexpected error. Try re-starting the deployment.\n"));
+                        Console.print(i18nOut("Unexpected error. Try re-starting the deployment.\n"));
                         System.exit(1);
                     } else if request.responseHttpStatus == 423 {
-                        Console.print(I18n.string(
+                        Console.print(i18nOut(
                             "Some operation is currently in progress on this project's container. Retry (yes/no)? "
                         ));
                         if getUserYesNoAnswer(String()) != "yes" {
@@ -334,16 +328,16 @@
                         continue 2;
                     }
                 }
-                Console.print(I18n.string("Uploading: %d%%"), 100);
+                Console.print(i18nOut("Uploading: %d%%"), 100);
                 Console.print("\n");
                 break;
             }
             Fs.remove(tarFilename);
-            Console.print(I18n.string("Deployment successful.\n"));
+            Console.print(i18nOut("Deployment successful.\n"));
         }
 
         handler this.selectProduct(): String {
-            Console.print(I18n.string("Select a plan:\n"));
+            Console.print(i18nOut("Select a plan:\n"));
             def i: Int;
             def options: Map[String, String];
             for i = 0, i < this.products.getLength(), ++i {
@@ -361,7 +355,7 @@
 
         func getProductInfoString(product: Json): String {
             return String.format(
-                I18n.string("%s - %s.\nMonthly cost: $%s USD\n"),
+                i18nOut("%s - %s.\nMonthly cost: $%s USD\n"),
                 product("name")~cast[CharsPtr],
                 product("description")~cast[CharsPtr],
                 formatPrice(product("price")).buf
