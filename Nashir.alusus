@@ -2,26 +2,52 @@ import "Srl/Net.alusus";
 import "Srl/Console.alusus";
 import "Srl/System.alusus";
 import "Srl/Fs.alusus";
+import "Spp";
 import "Build";
 import "Apm";
 Apm.importFile("Alusus/ExtendedNet");
 Apm.importFile("Alusus/Json");
 Apm.importFile("Alusus/Crypto");
 Apm.importFile("Alusus/I18n");
+Apm.importFile("Alusus/ProgArg");
 
-import "Drivers/Driver";
+import "Config";
+import "PublishDrivers/PublishDriver";
 
 @merge module Nashir {
     use Srl;
+    use Core.Basic;
 
-    def verbose: Bool(false);
+    // Paths
+    def buildPath: String(1, "Build");
+    def nashirPath: String = getThisSourceDirectory[];
     def myWorkDir: String;
-    def assets: Array[String];
-    def dependencies: Array[String];
-    def driver: SrdRef[Driver];
+
+    // Translation Variables
+    def configKeyTranslations: Map[String, String];
+    def i18nOut: I18n.Dictionary;
+    def i18nIn: I18n.Dictionary;
+
+    def config: Config;
+    def verbose: Bool(false);
+
+    def TioRef: alias ref[TiObject];
+    def TioSrdRef: alias SrdRef[TiObject];
+
+    func initializeTranslations {
+        def poContent: Srl.String;
+        poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_out.po");
+        if poContent != "" Nashir.i18nOut.add(poContent);
+        poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_in.po");
+        if poContent != "" Nashir.i18nIn.add(poContent);
+        poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_args_out.po");
+        if poContent != "" ProgArg.i18nOut.add(poContent);
+        poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_args_in.po");
+        if poContent != "" ProgArg.i18nIn.add(poContent);
+    }
 
     macro handleUnexpectedCommunicationError {
-        Console.print(I18n.string("Unexpected communication error! Retry? "));
+        Console.print(i18nOut("Unexpected communication error! Retry? "));
         if getUserYesNoAnswer(String()) != "yes" {
             System.exit(1);
         }
@@ -42,9 +68,9 @@ import "Drivers/Driver";
             if prompt != "" Console.print(prompt);
             def answer: array[Char, 100];
             Console.getString(answer~ptr, 100);
-            ret = I18n.string(answer~ptr).toLowerCase();
+            ret = i18nIn(answer~ptr).toLowerCase();
             if options.findPos(ret) == -1 {
-                Console.print(I18n.string("Invalid entry.\n"));
+                Console.print(i18nOut("Invalid entry.\n"));
                 continue;
             }
             ret = options(ret);
@@ -61,7 +87,7 @@ import "Drivers/Driver";
             Console.getString(answer~ptr, 1024);
             result = String(answer~ptr).trim();
             if result != "" or allowEmpty break;
-            Console.print(I18n.string("Invalid entry.\n"));
+            Console.print(i18nOut("Invalid entry.\n"));
         }
         return result;
     }
@@ -74,64 +100,184 @@ import "Drivers/Driver";
         myWorkDir = String(path~ptr);
         // Remove the \n from the end of the string.
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
-        driver.publish();
+        config.publishDriver.publish();
     }
 
-    func build [start: ast_ref] () {
+    func build [start: ast_ref, modules: ast_ref = Root] () {
         def i: Int;
-        for i = 0, i < assets.getLength(), ++i {
-            System.exec(String.format("cp -r \"%s\" Build/", assets(i).buf));
+        for i = 0, i < config.assets.getLength(), ++i {
+            System.exec(String.format("cp -r \"%s\" %s/", config.assets(i).buf, buildPath.buf));
         }
-        def exe: Build.Exe(start~ast، String("Build/start"));
-        exe.addDependencies(dependencies);
+        preprocess {
+            if isWebPlatformInUse() {
+                Spp.astMgr.insertAst(
+                    ast WebPlatform.buildUiEndpoints(
+                        modules~ast,
+                        buildPath + "/" + config.webPlatformMainAssetsPath,
+                        buildPath + "/" + config.webPlatformUiEndpointsPath
+                    )
+                );
+            }
+        }
+        def exe: Build.Exe(start~ast، buildPath + "/start");
+        exe.addDependencies(config.dependencies);
         if exe.generate() {
-            Console.print(I18n.string("Build complete.\n"));
+            Console.print(i18nOut("Build complete.\n"));
         } else {
-            System.fail(1، I18n.string("Build failed."));
+            System.fail(1، i18nOut("Build failed."));
         }
     }
 
-    macro createStartExe[name, startJit] {
-        @expname[main]
-        func name (argCount: Int، args: ptr[array[CharsPtr]]): Int {
-            mainAssetsPath = "Assets/";
-            uiEndpointsPath = "UiEndpoints/";
+    func isWebPlatformInUse(): Bool {
+        use Srl;
+        def webPlatform: Array[ref[TiObject]] = Spp.astMgr.findElements(
+            (ast WebPlatform),
+            Root~ast,
+            Spp.SeekerFlags.SKIP_OWNERS | Spp.SeekerFlags.SKIP_USES | Spp.SeekerFlags.SKIP_CHILDREN
+        );
+        return webPlatform.getLength() > 0;
+    }
 
-            startJit();
+    macro setup[options] preprocess { Nashir._setup(options) };
+
+    func _setup(conf: ref[Config]) {
+        config = conf;
+
+        // Validate config.
+        if config.projectName == "" raiseInitializeError("projectName is missing in config.");
+        if config.projectVersion == "" raiseInitializeError("projectVersion is missing in config.");
+        if config.serverPort == 0 raiseInitializeError("serverPort is missing in config.");
+        if config.publishDriver.isNull() raiseInitializeError("publishDriver is missing in config.");
+        if (config.startJit~ptr == 0 and config.startExe~ptr != 0)
+        or (config.startJit~ptr != 0 and config.startExe~ptr == 0) {
+            raiseInitializeError("startJit and startExe should be either both set or both unset in config.");
+        }
+
+        preprocess {
+            if isWebPlatformInUse() {
+                Spp.astMgr.insertAst(
+                    ast if config.startJit~ptr == 0 config.dependencies.add(WebPlatform.getBuildDependencies())
+                );
+            }
+        }
+
+        // Generate statements.
+        def startJitPassage: Core.Data.Ast.Passage(config.startJit);
+        def startExePassage: Core.Data.Ast.Passage(config.startExe);
+        def startJit: TioRef;
+        def startExe: TioRef;
+        if config.startJit~ptr == 0 {
+            startJit~no_deref = ast _startJit;
+            startExe~no_deref = ast _startExe;
+            Spp.astMgr.insertAst(
+                ast {
+                    Nashir.generateWebPlatformEntryPoints[
+                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr](serverOptions)
+                    ];
+                },
+                Map[String, TioRef]()
+                    .set(String("assetsPath"), Core.Data.Ast.StringLiteral(config.webPlatformMainAssetsPath))
+                    .set(String("endpointsPath"), Core.Data.Ast.StringLiteral(config.webPlatformUiEndpointsPath))
+                    .set(String("serverModules"), Core.Data.Ast.Passage(config.serverModules))
+                    .set(String("serverPort"), Core.Data.Ast.IntegerLiteral(String() + config.serverPort))
+                    .set(String("serverOptions"), generateStringLiteralList(config.serverOptions))
+            );
+        } else {
+            startJit~no_deref = startJitPassage;
+            startExe~no_deref = startExePassage;
+        }
+        Spp.astMgr.insertAst(
+            ast {
+                Nashir.initializeProgArg[startExe, startJit, serverModules];
+            },
+            Map[String, TioRef]()
+                .set(String("startJit"), startJit)
+                .set(String("startExe"), startExe)
+                .set(String("serverModules"), Core.Data.Ast.Passage(config.serverModules))
+        );
+    }
+
+    func raiseInitializeError(msg: CharsPtr) {
+        def error: String = i18nOut("Nashir initialization error.") + " " + i18nOut(msg);
+        System.fail(1, error);
+    }
+
+    func generateStringLiteralList(strs: Array[CharsPtr]): TioSrdRef {
+        def list: SrdRef[Core.Data.Ast.List] = newSrdObj[Core.Data.Ast.List];
+        def listContainer: DynContainerOf[list.obj];
+        def i: Int;
+        for i = 0, i < strs.getLength(), ++i {
+            def arg: SrdRef[Core.Data.Ast.StringLiteral] = newSrdObj[Core.Data.Ast.StringLiteral];
+            arg.value.value = String(strs(i));
+            listContainer.addElement(arg.obj);
+        }
+        return castSrdRef[list, TiObject];
+    }
+
+    macro generateWebPlatformEntryPoints[assetsPath, endpointsPath, serverModules, serverPort, serverOptions] {
+        func _startJit {
+            Srl.Console.print("Starting server on port %d...\nURL: http://localhost:%d/\n", serverPort, serverPort);
+            def port: String;
+            port += serverPort;
+            def options: Srl.Array[CharsPtr] = Srl.Array[CharsPtr]({ "listening_ports", port });
+            options.add(serverOptions);
+            WebPlatform.buildAndRunServer[serverModules](options);
+        }
+
+        @expname[main]
+        func _startExe (argCount: Int، args: ptr[array[CharsPtr]]): Int {
+            Srl.Console.print("Starting server on port %d...\nURL: http://localhost:%d/\n", serverPort, serverPort);
+            def port: String;
+            port += serverPort;
+            def options: Srl.Array[CharsPtr] = Srl.Array[CharsPtr]({ "listening_ports", port });
+            options.add(serverOptions);
+            runServer[serverModules](Srl.String(assetsPath), Srl.String(endpointsPath), options);
             return 0;
         }
     }
 
-    macro initialize[driverInit] {
-        Srl.System.exec("mkdir -p Build");
-        Srl.System.exec("rm -rf Build/*");
-        WebPlatform.mainAssetsPath = "Build/Assets/";
-        WebPlatform.uiEndpointsPath = "Build/UiEndpoints/";
-        Nashir.driver = driverInit;
-    }
-
-    macro startup[startExe, startJit] {
-        if Process.argCount == 3 {
-            def arg: CharsPtr = Process.args~cnt(Process.argCount - 1);
-            if I18n.string(arg) == "build" {
-                Nashir.build[startExe]();
-            } else if I18n.string(arg) == "publish" {
-                Nashir.build[startExe]();
-                Nashir.publish();
-            } else {
-                Console.print(I18n.string(
-                    "Error: Invalid argument\n"
-                    "Usage:\n"
-                    "  alusus <main_alusus_file> [build|publish]\n"
-                ));
-            }
-        } else {
-            startJit();
-        }
-    }
-
-    macro startup[start] {
-        Nashir.createStartExe[_main, start];
-        Nashir.startup[_main, start];
+    macro initializeProgArg[startExe, startJit, serverModules] {
+        ProgArg.initialize();
+        ProgArg.cmdDef = ProgArg.CmdDef().{
+            use Srl;
+            callback = closure (options: Map[String, String], args: Array[String]) {
+                Console.print(
+                    Nashir.i18nOut("%s\nVersion: %s\n\n"),
+                    Nashir.config.projectName.buf,
+                    Nashir.config.projectVersion.buf
+                );
+                ProgArg.printHelp(2);
+            };
+            subCmds = Array[SrdRef[ProgArg.CmdDef]]({
+                ProgArg.CmdDef().{
+                    kwd = "start";
+                    description = "Start the application.";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        startJit();
+                    };
+                },
+                ProgArg.CmdDef().{
+                    kwd = "build";
+                    description = "Build an executable.";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
+                        Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
+                        Nashir.build[startExe, serverModules]();
+                    };
+                },
+                ProgArg.CmdDef().{
+                    kwd = "publish";
+                    description = "Publish the application.";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
+                        Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
+                        Nashir.build[startExe, serverModules]();
+                        Nashir.publish();
+                    };
+                }
+            });
+        };
     }
 }
+
+Nashir.initializeTranslations();

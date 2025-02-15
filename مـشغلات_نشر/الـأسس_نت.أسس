@@ -1,0 +1,5 @@
+اشمل "../PublishDrivers/AlususNet"؛
+
+@دمج وحدة نـاشر {
+    عرف مـشغل_نشر_الأسس_نت: لقب AlususNetPublishDriver؛
+}
