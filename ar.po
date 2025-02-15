@@ -172,8 +172,8 @@ msgstr "publish"
 msgid "Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen \n"
 msgstr "اسم المشروع غير صالح. يجب أن يحتوي فقط على أحرف صغيرة، أرقام، وشرطات (-)، ويجب ألا يبدأ أو ينتهي بشرطة.\n"
 
-msgid "Enter mfaCode: \n>"
-msgstr "أدخل رمز التحقق متعدد العوامل: \n>"
+msgid "Enter mfaCode or enter back to logIn agin: \n>"
+msgstr "أدخل رمز التحقق متعدد العوامل أو ادخل رجوع للعودة الى تسجيل الدخول: \n>"
 
 msgid "The account is locked due to multiple incorrect password attempts. Please try again later.\n"
 msgstr "تم قفل الحساب بسبب محاولات متعددة لإدخال كلمة مرور غير صحيحة. يرجى المحاولة مرة أخرى لاحقًا.\n"
@@ -181,3 +181,5 @@ msgstr "تم قفل الحساب بسبب محاولات متعددة لإدخا
 msgid "Entered information is invalid!\n"
 msgstr "المعلومات المدخلة غير صحيحة!\n"
 
+msgid "back"
+msgstr "رجوع"
