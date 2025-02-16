@@ -1,0 +1,17 @@
+msgid "نعم"
+msgstr "yes"
+
+msgid "لا"
+msgstr "no"
+
+msgid "ألغ"
+msgstr "cancel"
+
+msgid "قسيمة"
+msgstr "coupon"
+
+msgid "مستوى"
+msgstr "plan"
+
+msgid "رجوع"
+msgstr "back"

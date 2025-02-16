@@ -138,36 +138,8 @@ msgid "Enter the name of the systemd service to be restarted after publishing, "
 msgstr "أدخل اسم خدمة systemd التي سيتم إعادة تشغيلها بعد النشر، "
 "أو اترك الحقل فارغًا لتجاوز إعادة تشغيل الخدمة: "
 
-msgid "Error: Invalid argument\n"
-"Usage:\n"
-"  alusus <main_alusus_file> [build|publish]\n"
-msgstr "خطأ: المعطى غير صالح\n"
-"طريقة الاستخدام:\n"
-"  الأسس <اسم_الملف_الرئيسي> [ابن|انشر]\n"
-
 msgid "Uploading: %d%%"
 msgstr "تحميل: %d%%"
-
-msgid "نعم"
-msgstr "yes"
-
-msgid "لا"
-msgstr "no"
-
-msgid "ألغ"
-msgstr "cancel"
-
-msgid "قسيمة"
-msgstr "coupon"
-
-msgid "مستوى"
-msgstr "plan"
-
-msgid "ابن"
-msgstr "build"
-
-msgid "انشر"
-msgstr "publish"
 
 msgid "Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen \n"
 msgstr "اسم المشروع غير صالح. يجب أن يحتوي فقط على أحرف صغيرة، أرقام، وشرطات (-)، ويجب ألا يبدأ أو ينتهي بشرطة.\n"
@@ -181,5 +153,5 @@ msgstr "تم قفل الحساب بسبب محاولات متعددة لإدخا
 msgid "Entered information is invalid!\n"
 msgstr "المعلومات المدخلة غير صحيحة!\n"
 
-msgid "back"
-msgstr "رجوع"
+msgid "%s\nVersion: %s\n\n"
+msgstr "%s\nالإصدار: %s\n\n"

@@ -7,16 +7,25 @@
 @دمج وحدة نـاشر {
     عرف nashirPath: نـص(هات_مجلد_هذه_الشفرة[])؛
     عرف إطناب: لقب verbose؛
-    عرف الموارد: لقب assets؛
-    عرف الاعتماديات: لقب dependencies؛
-    ماكرو هيئ[مهيئ_المشغل] {
-        I18n.initializeStrings(Fs.readFile(Nashir.nashirPath + "ar.po"));
-        Nashir.initialize[مهيئ_المشغل]؛
-    }
-    عرف ابدأ: لقب startup؛
+    عرف اضبط: لقب setup؛
     عرف ابن: لقب build؛
     عرف انشر: لقب publish؛
-    عرف أنشئ_مدخل_تنفيذ: لقب createStartExe؛
 
-    عرف مـشغل: لقب Driver؛
+    عرف إعـدادات: لقب Config؛
+    @دمج صنف إعـدادات {
+        عرف اسم_المشروع: لقب projectName؛
+        عرف رقم_الإصدار: لقب projectVersion؛
+        عرف منفذ_الخادم: لقب serverPort؛
+        عرف مسار_الموارد_الرئيسية_لمنصة_ويب: لقب webPlatformMainAssetsPath؛
+        عرف مسار_المنافذ_المرئية_لمنصة_ويب: لقب webPlatformUiEndpointsPath؛
+        عرف وحدات_الخادم: لقب serverModules؛
+        عرف مشغل_النشر: لقب publishDriver؛
+        عرف خيارات_الخادم: لقب serverOptions؛
+        عرف بداية_آنية: لقب startJit؛
+        عرف بداية_مبنية: لقب startExe؛
+        عرف الموارد: لقب assets؛
+        عرف الاعتماديات: لقب dependencies؛
+    }
+
+    عرف مـشغل_نشر: لقب PublishDriver؛
 }

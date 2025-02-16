@@ -1,0 +1,17 @@
+msgid "start"
+msgstr "ابدأ"
+
+msgid "build"
+msgstr "ابن"
+
+msgid "publish"
+msgstr "انشر"
+
+msgid "Start the application."
+msgstr "ابدأ التطبيق."
+
+msgid "Build an executable."
+msgstr "ابنِ نسخة تنفيذية للتطبيق."
+
+msgid "Publish the application."
+msgstr "انشر التطبيق إلى الخادم."

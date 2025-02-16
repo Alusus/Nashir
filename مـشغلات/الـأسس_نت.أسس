@@ -1,5 +1,0 @@
-اشمل "../Drivers/AlususNet"؛
-
-@دمج وحدة نـاشر {
-    عرف مـشغل_الأسس_نت: لقب AlususNetDriver؛
-}
