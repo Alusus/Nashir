@@ -9,8 +9,7 @@
         def UPLOAD_PROJECT_PATH: "/api/project/upload";
         def CREATE_AUTH_TOKEN_MFA: "/api/user/verify-mfa";
         def CREATE_AUTH_TOKEN: "/api/login";
-        def BATCH_SIZE: 102400;
-        // 100 KB
+        def BATCH_SIZE: 102400; // 100 KB
         def HOST: "https://alusus.net";
         @shared def host: String(CharsPtr().{
             this = System.getEnv("NASHIR_HOST");
@@ -24,7 +23,7 @@
         def trustKey: String;
         def userName: String;
         def trustedTokenPath: String;
-        def invalidCodeCounter: int = 3;
+        def invalidCodeCounter: Int = 3;
 
         handler this~init() {
         }
@@ -43,7 +42,10 @@
                 this.setupProject();
                 this.uploadProject();
             } else {
-                Console.print(i18nOut("Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen \n"));
+                Console.print(i18nOut(
+                    "Invalid project name. It should only contain lowercase letters, numbers, "
+                    "hyphens (-), and must not start or end with a hyphen \n"
+                ));
             }
         }
 
@@ -83,16 +85,15 @@
             def userName: array[Char, 100];
             def password: array[Char, 100];
             def mfaCode: array[Char, 100];
-            def breaked: bool = false;
-            macro promptForUserName{
+            macro promptForUserName {
                 Console.print(i18nOut("Enter username: \n>"));
                 Console.getString(userName~ptr, 100);
             }
-            macro promptForPassword{
+            macro promptForPassword {
                 Console.print(i18nOut("Enter password: \n>"));
                 Console.getString(password~ptr, 100);
             }
-            macro promptForMfaCode{
+            macro promptForMfaCode {
                 Console.print(i18nOut("Enter mfaCode or enter back to logIn agin: \n>"));
                 Console.getString(mfaCode~ptr, 100);
             }
@@ -104,9 +105,9 @@
             }
             promptForUserName[];
             promptForPassword[];
-            def requestString: String = "";
             while 1 {
-                if this.trustKey != String("") and this.userName == String(userName~ptr) {
+                def requestString: String;
+                if this.trustKey != "" and this.userName == userName~ptr {
                     requestString = String.format(
                         "{\"username\": \"%s\" , \"password\": \"%s\" ,\"trustToken\": \"%s\"}",
                         Json.escape(String(userName~ptr).trim()).buf,
@@ -122,15 +123,9 @@
                 }
                 def request: Net.Request(host + CREATE_AUTH_TOKEN);
                 request.verbose = verbose;
-                request.authType = "Basic";
-                request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
-                request.post(String.format(
-                    "{\"name\": \"%s\", \"validity\": 30}",
-                    Json.escape(config.projectName).buf
-                ));
-                if request.responseHttpStatus == 201 {
-                    this.authKey = Json(request.responseBody)("token");
-                    Fs.createFile(this.settingsFilePath, this.authKey, this.authKey.getLength());
+                request.post(requestString);
+                if request.responseHttpStatus == 200 {
+                    this.authKey = Json(request.responseBody)("authToken");
                     break;
                 } else if request.responseHttpStatus == 202 {
                     promptForMfaCode[];
@@ -148,8 +143,7 @@
                             this.trustKey = Json(verifyMfaCodeRequest.responseBody)("trustToken");
                             this.userName = String(userName~ptr).trim();
                             this.authKey = Json(verifyMfaCodeRequest.responseBody)("authToken");
-                            breaked = true;
-                            break;
+                            break 2;
                         } else {
                             if status == 401 {
                                 Console.print(i18nOut("Code is invalid!\n"));
@@ -164,7 +158,6 @@
                             }
                         }
                     }
-                    if breaked break;
                     promptForUserName[];
                     promptForPassword[];
                 } else if request.responseHttpStatus == 401 {
@@ -172,12 +165,18 @@
                     promptForUserName[];
                     promptForPassword[];
                 } else if request.responseHttpStatus == 429 {
-                    Console.print(i18nOut("The account is locked due to multiple incorrect password attempts. Please try again later.\n"));
+                    Console.print(i18nOut(
+                        "The account is locked due to multiple incorrect password attempts. Please try again later.\n"
+                    ));
+                    System.exit(1);
                 } else {
                     handleUnexpectedCommunicationError[];
                 }
             }
-            def data: String = String.format("{\"trustKey\": \"%s\" , \"userName\": \"%s\"}", this.trustKey.buf, this.userName.buf);
+            def data: String = String.format(
+                "{\"trustKey\": \"%s\" , \"userName\": \"%s\"}",
+                this.trustKey.buf, this.userName.buf
+            );
             Fs.createFile(this.trustedTokenPath, data, data.getLength());
         }
 
@@ -186,7 +185,7 @@
                 def data: String = Fs.readFile(this.settingsFilePath);
                 this.uploadKey = Json(data)("uploadKey");
             } else {
-                if this.authKey == String("") this.fetchAuthToken();
+                if this.authKey == "" this.fetchAuthToken();
                 while 1 {
                     def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
                     request.verbose = verbose;
@@ -486,12 +485,9 @@
             return result;
         }
 
-        func checkProjectName(projectName: String): bool {
+        func checkProjectName(projectName: String): Bool {
             def matcher: Regex.Matcher("^[a-z0-9\\-]+$");
-
-            if matcher.match(projectName.buf).getLength() > 0 return true;
-
-            return false;
+            return matcher.match(projectName.buf).getLength() > 0;
         }
     }
 }
