@@ -141,7 +141,7 @@ msgstr "أدخل اسم خدمة systemd التي سيتم إعادة تشغيل
 msgid "Uploading: %d%%"
 msgstr "تحميل: %d%%"
 
-msgid "Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen \n"
+msgid "Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen.\n"
 msgstr "اسم المشروع غير صالح. يجب أن يحتوي فقط على أحرف صغيرة، أرقام، وشرطات (-)، ويجب ألا يبدأ أو ينتهي بشرطة.\n"
 
 msgid "Enter mfaCode or enter back to logIn agin: \n>"
@@ -155,3 +155,24 @@ msgstr "المعلومات المدخلة غير صحيحة!\n"
 
 msgid "%s\nVersion: %s\n\n"
 msgstr "%s\nالإصدار: %s\n\n"
+
+msgid "Nashir initialization error."
+msgstr "خطأ في تهيئة الناشر."
+
+msgid "`projectName` is missing in config."
+msgstr "`اسم_المشروع` مفقود في الإعدادات."
+
+msgid "`projectVersion` is missing in config."
+msgstr "`رقم_الإصدار` مفقود في الإعدادات."
+
+msgid "`serverPort` is missing in config."
+msgstr "`منفذ_الخادم` مفقود في الاعدادات."
+
+msgid "`publishDriver` is missing in config."
+msgstr "`مشغل_النشر` مفقود في الإعدادات."
+
+msgid "`startJit` and `startExe` should be either both set or both unset in config."
+msgstr "`بداية_آنية` و بداية_مبنية` يجب أن تُوفرا معًا أو تُهملا معًا في الإعدادات."
+
+msgid "`initializer` should not be provided when startJit and startExe are provided in the config."
+msgstr "`مهيئ` يجب أن لا تُوفر عند توفير `بداية_آنية` و `بداية_مبنية` في الإعدادات."

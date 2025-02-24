@@ -16,6 +16,7 @@
             if this == 0 this = HOST;
         });
 
+        def publishProjectName: String;
         def settingsFilePath: String;
         def products: Json;
         def uploadKey: String;
@@ -25,11 +26,21 @@
         def trustedTokenPath: String;
         def invalidCodeCounter: Int = 3;
 
-        handler this~init() {
+        handler this~init(projName: String) {
+            this.publishProjectName = projName;
         }
 
         handler this_type(): SrdRef[PublishDriver] {
-            return SrdRef[AlususNetPublishDriver].construct();
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String()) };
+        }
+
+        handler this_type(projName: String): SrdRef[PublishDriver] {
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(projName) };
+        }
+
+        handler this.projectName: String {
+            if this.publishProjectName != "" return this.publishProjectName
+            else return config.projectName;
         }
 
         handler (this:PublishDriver).publish() set_ptr {
@@ -44,7 +55,7 @@
             } else {
                 Console.print(i18nOut(
                     "Invalid project name. It should only contain lowercase letters, numbers, "
-                    "hyphens (-), and must not start or end with a hyphen \n"
+                    "hyphens (-), and must not start or end with a hyphen.\n"
                 ));
             }
         }
@@ -216,7 +227,7 @@
             def promotionCode: String;
             while 1 {
                 def request: Net.Request(String.format(
-                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(config.projectName).buf
+                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(this.projectName).buf
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
@@ -331,7 +342,7 @@
                 def request: Net.Request(String.format(
                     "%s%s?project=%s&product=%s&promotion_code=%s",
                     host.buf, SETUP_PROJECT_PATH,
-                    Net.uriEncode(config.projectName).buf,
+                    Net.uriEncode(this.projectName).buf,
                     Net.uriEncode(productId).buf,
                     Net.uriEncode(promotionCode).buf
                 ));
@@ -378,13 +389,13 @@
         }
 
         handler this.uploadProject() {
-            def order: String = String("rm -rf \"") + config.projectName + "\"";
+            def order: String = String("rm -rf \"") + this.projectName + "\"";
             System.exec(order);
-            order = String("mv Build \"") + config.projectName + "\"";
+            order = String("mv Build \"") + this.projectName + "\"";
             System.exec(order);
             def tarFilename: String;
-            tarFilename = config.projectName + String(".tar.gz");
-            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + config.projectName + "\" .";
+            tarFilename = this.projectName + String(".tar.gz");
+            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + this.projectName + "\" .";
             System.exec(order);
             def buffer: UnqRef[array[Char, BATCH_SIZE]];
             buffer.construct();
@@ -405,7 +416,7 @@
                     }
                     def request: Net.Request(String.format(
                         "%s%s?project=%s&port=%i", host.buf, UPLOAD_PROJECT_PATH,
-                        Net.uriEncode(config.projectName).buf, config.serverPort
+                        Net.uriEncode(this.projectName).buf, config.serverPort
                     ));
                     request.verbose = verbose;
                     request.authKey = this.uploadKey;

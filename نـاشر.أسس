@@ -23,6 +23,7 @@
         عرف خيارات_الخادم: لقب serverOptions؛
         عرف بداية_آنية: لقب startJit؛
         عرف بداية_مبنية: لقب startExe؛
+        عرف مهيئ: لقب initializer؛
         عرف الموارد: لقب assets؛
         عرف الاعتماديات: لقب dependencies؛
     }
