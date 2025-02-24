@@ -6,12 +6,13 @@
         def serverOptions: Array[CharsPtr];
         def webPlatformMainAssetsPath: String(1, "Assets/");
         def webPlatformUiEndpointsPath: String(1, "UiEndpoints/");
-        def assets: Array[String];
+        def assets: Map[String, String];
         def dependencies: Array[String];
         def publishDriver: SrdRef[PublishDriver];
 
         def startJit: TioRef(nullRef[TiObject]);
         def startExe: TioRef(nullRef[TiObject]);
+        def initializer: TioRef(nullRef[TiObject]);
         def serverModules: TioRef(Root~ast);
 
         handler this~init() {}

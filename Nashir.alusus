@@ -106,7 +106,12 @@ import "PublishDrivers/PublishDriver";
     func build [start: ast_ref, modules: ast_ref = Root] () {
         def i: Int;
         for i = 0, i < config.assets.getLength(), ++i {
-            System.exec(String.format("cp -r \"%s\" %s/", config.assets(i).buf, buildPath.buf));
+            System.exec(String.format(
+                "cp -r \"%s\" %s/%s",
+                config.assets.keyAt(i).buf,
+                buildPath.buf,
+                config.assets.valAt(i).buf
+            ));
         }
         preprocess {
             if isWebPlatformInUse() {
@@ -144,20 +149,31 @@ import "PublishDrivers/PublishDriver";
         config = conf;
 
         // Validate config.
-        if config.projectName == "" raiseInitializeError("projectName is missing in config.");
-        if config.projectVersion == "" raiseInitializeError("projectVersion is missing in config.");
-        if config.serverPort == 0 raiseInitializeError("serverPort is missing in config.");
-        if config.publishDriver.isNull() raiseInitializeError("publishDriver is missing in config.");
+        if config.projectName == "" raiseInitializeError("`projectName` is missing in config.");
+        if config.projectVersion == "" raiseInitializeError("`projectVersion` is missing in config.");
+        if config.serverPort == 0 raiseInitializeError("`serverPort` is missing in config.");
+        if config.publishDriver.isNull() raiseInitializeError("`publishDriver` is missing in config.");
         if (config.startJit~ptr == 0 and config.startExe~ptr != 0)
         or (config.startJit~ptr != 0 and config.startExe~ptr == 0) {
-            raiseInitializeError("startJit and startExe should be either both set or both unset in config.");
+            raiseInitializeError("`startJit` and `startExe` should be either both set or both unset in config.");
+        }
+        if config.startJit~ptr != 0 and config.initializer~ptr != 0 {
+            raiseInitializeError(
+                "`initializer` should not be provided when startJit and startExe are provided in the config."
+            );
         }
 
         preprocess {
             if isWebPlatformInUse() {
-                Spp.astMgr.insertAst(
-                    ast if config.startJit~ptr == 0 config.dependencies.add(WebPlatform.getBuildDependencies())
-                );
+                Spp.astMgr.insertAst(ast {
+                    if config.startJit~ptr == 0 config.dependencies.add(WebPlatform.getBuildDependencies());
+                    def assetRoutes: Array[WebPlatform.StaticRoute];
+                    assetRoutes = WebPlatform.getAssetsRoutesFromModules(config.serverModules);
+                    def i: Int;
+                    for i = 0, i < assetRoutes.getLength(), ++i {
+                        config.assets(assetRoutes(i).srcPath) = assetRoutes(i).buildPath;
+                    }
+                });
             }
         }
 
@@ -169,10 +185,14 @@ import "PublishDrivers/PublishDriver";
         if config.startJit~ptr == 0 {
             startJit~no_deref = ast _startJit;
             startExe~no_deref = ast _startExe;
+            def initializerPassage: Core.Data.Ast.Passage(config.initializer);
+            def initializer: TioRef;
+            if config.initializer~ptr == 0 initializer~no_deref = ast Nashir.dummyInitializer
+            else initializer~no_deref = initializerPassage;
             Spp.astMgr.insertAst(
                 ast {
                     Nashir.generateWebPlatformEntryPoints[
-                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr](serverOptions)
+                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr](serverOptions), initializer
                     ];
                 },
                 Map[String, TioRef]()
@@ -181,6 +201,7 @@ import "PublishDrivers/PublishDriver";
                     .set(String("serverModules"), Core.Data.Ast.Passage(config.serverModules))
                     .set(String("serverPort"), Core.Data.Ast.IntegerLiteral(String() + config.serverPort))
                     .set(String("serverOptions"), generateStringLiteralList(config.serverOptions))
+                    .set(String("initializer"), initializer)
             );
         } else {
             startJit~no_deref = startJitPassage;
@@ -214,8 +235,14 @@ import "PublishDrivers/PublishDriver";
         return castSrdRef[list, TiObject];
     }
 
-    macro generateWebPlatformEntryPoints[assetsPath, endpointsPath, serverModules, serverPort, serverOptions] {
+    func dummyInitializer {
+    }
+
+    macro generateWebPlatformEntryPoints[
+        assetsPath, endpointsPath, serverModules, serverPort, serverOptions, initializer
+    ] {
         func _startJit {
+            initializer();
             Srl.Console.print("Starting server on port %d...\nURL: http://localhost:%d/\n", serverPort, serverPort);
             def port: String;
             port += serverPort;
@@ -226,6 +253,7 @@ import "PublishDrivers/PublishDriver";
 
         @expname[main]
         func _startExe (argCount: Int، args: ptr[array[CharsPtr]]): Int {
+            initializer();
             Srl.Console.print("Starting server on port %d...\nURL: http://localhost:%d/\n", serverPort, serverPort);
             def port: String;
             port += serverPort;

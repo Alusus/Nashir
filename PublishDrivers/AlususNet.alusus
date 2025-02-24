@@ -7,6 +7,8 @@
         def GET_PROJECT_STATUS_PATH: "/api/project/setup-status";
         def SETUP_PROJECT_PATH: "/api/project/setup";
         def UPLOAD_PROJECT_PATH: "/api/project/upload";
+        def CREATE_AUTH_TOKEN_MFA: "/api/user/verify-mfa";
+        def CREATE_AUTH_TOKEN: "/api/login";
         def BATCH_SIZE: 102400; // 100 KB
         def HOST: "https://alusus.net";
         @shared def host: String(CharsPtr().{
@@ -14,23 +16,48 @@
             if this == 0 this = HOST;
         });
 
+        def publishProjectName: String;
         def settingsFilePath: String;
         def products: Json;
+        def uploadKey: String;
         def authKey: String;
+        def trustKey: String;
+        def userName: String;
+        def trustedTokenPath: String;
+        def invalidCodeCounter: Int = 3;
 
-        handler this~init() {
+        handler this~init(projName: String) {
+            this.publishProjectName = projName;
         }
 
         handler this_type(): SrdRef[PublishDriver] {
-            return SrdRef[AlususNetPublishDriver].construct();
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String()) };
+        }
+
+        handler this_type(projName: String): SrdRef[PublishDriver] {
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(projName) };
+        }
+
+        handler this.projectName: String {
+            if this.publishProjectName != "" return this.publishProjectName
+            else return config.projectName;
         }
 
         handler (this:PublishDriver).publish() set_ptr {
             this.settingsFilePath = myWorkDir + String("/.deploy.settings");
-            this.fetchProducts();
-            this.fetchUploadToken();
-            this.setupProject();
-            this.uploadProject();
+            def homeDir: String = System.getEnv("HOME");
+            this.trustedTokenPath = homeDir + String("/.alnashir.token");
+            if checkProjectName(this.projectName) {
+                this.fetchProducts();
+                this.fetchUploadToken();
+                this.setupProject();
+                this.uploadProject();
+            } else {
+                Console.print(i18nOut(
+                    "Invalid project name. It should only contain lowercase letters, numbers, "
+                    "hyphens (-), and must not start or end with a hyphen.\n"
+                ));
+            }
         }
 
         macro handle401Error {
@@ -65,37 +92,131 @@
             return Json();
         }
 
-        handler this.fetchUploadToken() {
-            if Fs.exists(this.settingsFilePath) {
-                this.authKey = Fs.readFile(this.settingsFilePath);
-            }
+        handler this.fetchAuthToken() {
             def userName: array[Char, 100];
             def password: array[Char, 100];
-            macro promptForUserCredentials {
+            def mfaCode: array[Char, 100];
+            macro promptForUserName {
                 Console.print(i18nOut("Enter username: \n>"));
                 Console.getString(userName~ptr, 100);
+            }
+            macro promptForPassword {
                 Console.print(i18nOut("Enter password: \n>"));
                 Console.getString(password~ptr, 100);
             }
-            promptForUserCredentials[];
+            macro promptForMfaCode {
+                Console.print(i18nOut("Enter mfaCode or enter back to logIn agin: \n>"));
+                Console.getString(mfaCode~ptr, 100);
+            }
+
+            if Fs.exists(this.trustedTokenPath) {
+                def data: String = Fs.readFile(this.trustedTokenPath);
+                this.userName = Json(data)("userName");
+                this.trustKey = Json(data)("trustKey");
+            }
+            promptForUserName[];
+            promptForPassword[];
             while 1 {
-                def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
+                def requestString: String;
+                if this.trustKey != "" and this.userName == userName~ptr {
+                    requestString = String.format(
+                        "{\"username\": \"%s\" , \"password\": \"%s\" ,\"trustToken\": \"%s\"}",
+                        Json.escape(String(userName~ptr).trim()).buf,
+                        Json.escape(String(password~ptr).trim()).buf,
+                        Json.escape(this.trustKey.trim()).buf
+                    );
+                } else {
+                    requestString = String.format(
+                        "{\"username\": \"%s\", \"password\": \"%s\"}",
+                        Json.escape(String(userName~ptr).trim()).buf,
+                        Json.escape(String(password~ptr).trim()).buf,
+                    );
+                }
+                def request: Net.Request(host + CREATE_AUTH_TOKEN);
                 request.verbose = verbose;
-                request.authType = "Basic";
-                request.authKey = Crypto.encodeBase64(String(userName~ptr) + ":" + password~ptr);
-                request.post(String.format(
-                    "{\"name\": \"%s\", \"validity\": 30}",
-                    Json.escape(config.projectName).buf
-                ));
-                if request.responseHttpStatus == 201 {
-                    this.authKey = Json(request.responseBody)("token");
-                    Fs.createFile(this.settingsFilePath, this.authKey, this.authKey.getLength());
+                request.post(requestString);
+                if request.responseHttpStatus == 200 {
+                    this.authKey = Json(request.responseBody)("authToken");
                     break;
+                } else if request.responseHttpStatus == 202 {
+                    promptForMfaCode[];
+                    while 1 {
+                        if i18nIn(mfaCode~ptr) == "back" break;
+                        def verifyMfaCodeRequest: Net.Request(host + CREATE_AUTH_TOKEN_MFA);
+                        verifyMfaCodeRequest.post(String.format(
+                            "{\"username\": \"%s\" , \"password\": \"%s\" , \"code\": \"%s\"}",
+                            Json.escape(String(userName~ptr).trim()).buf,
+                            Json.escape(String(password~ptr).trim()).buf,
+                            Json.escape(String(mfaCode~ptr).trim()).buf
+                        ));
+                        def status: int = verifyMfaCodeRequest.responseHttpStatus;
+                        if status == 200 {
+                            this.trustKey = Json(verifyMfaCodeRequest.responseBody)("trustToken");
+                            this.userName = String(userName~ptr).trim();
+                            this.authKey = Json(verifyMfaCodeRequest.responseBody)("authToken");
+                            break 2;
+                        } else {
+                            if status == 401 {
+                                Console.print(i18nOut("Code is invalid!\n"));
+                                if this.invalidCodeCounter > 0 {
+                                    this.invalidCodeCounter--;
+                                    promptForMfaCode[];
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                handleUnexpectedCommunicationError[];
+                            }
+                        }
+                    }
+                    promptForUserName[];
+                    promptForPassword[];
                 } else if request.responseHttpStatus == 401 {
                     Console.print(i18nOut("Authentication error. Invalid username or password.\n"));
-                    promptForUserCredentials[];
+                    promptForUserName[];
+                    promptForPassword[];
+                } else if request.responseHttpStatus == 429 {
+                    Console.print(i18nOut(
+                        "The account is locked due to multiple incorrect password attempts. Please try again later.\n"
+                    ));
+                    System.exit(1);
                 } else {
                     handleUnexpectedCommunicationError[];
+                }
+            }
+            def data: String = String.format(
+                "{\"trustKey\": \"%s\" , \"userName\": \"%s\"}",
+                this.trustKey.buf, this.userName.buf
+            );
+            Fs.createFile(this.trustedTokenPath, data, data.getLength());
+        }
+
+        handler this.fetchUploadToken() {
+            if Fs.exists(this.settingsFilePath) {
+                def data: String = Fs.readFile(this.settingsFilePath);
+                this.uploadKey = Json(data)("uploadKey");
+            } else {
+                if this.authKey == "" this.fetchAuthToken();
+                while 1 {
+                    def request: Net.Request(host + CREATE_UPLOAD_TOKEN_PATH);
+                    request.verbose = verbose;
+                    request.authType = "Bearer";
+                    request.authKey = this.authKey;
+                    request.post(String.format(
+                        "{\"name\": \"%s\", \"validity\": 30}",
+                        Json.escape(this.projectName).buf
+                    ));
+                    if request.responseHttpStatus == 201 {
+                        this.uploadKey = Json(request.responseBody)("token");
+                        def data: String = String.format("{\"uploadKey\": \"%s\"}", this.uploadKey.buf);
+                        Fs.createFile(this.settingsFilePath, data, data.getLength());
+                        break;
+                    } else if request.responseHttpStatus == 401 {
+                        Console.print(i18nOut("Authentication error.\n"));
+                        this.fetchAuthToken();
+                    } else {
+                        handleUnexpectedCommunicationError[];
+                    }
                 }
             }
         }
@@ -106,11 +227,11 @@
             def promotionCode: String;
             while 1 {
                 def request: Net.Request(String.format(
-                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(config.projectName).buf
+                    "%s%s?project=%s", host.buf, GET_PROJECT_STATUS_PATH, Net.uriEncode(this.projectName).buf
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
-                request.authKey = this.authKey;
+                request.authKey = this.uploadKey;
                 request.get();
                 if request.responseHttpStatus == 200 {
                     request.responseBody.split("&").{
@@ -138,15 +259,15 @@
                 if product.getLength() == 0 {
                     System.fail(1, i18nOut(
                         "Existing, but inactive, project with the same name exists. "
-                        "This project is in an invalid state and cannot be re-activated. "
-                        "Contact AlususNet's support to resolve the issue, or change your "
-                        "project's name to create a new project on AlususNet.\n"
+                            "This project is in an invalid state and cannot be re-activated. "
+                            "Contact AlususNet's support to resolve the issue, or change your "
+                            "project's name to create a new project on AlususNet.\n"
                     ));
                 }
                 Console.print(i18nOut(
                     "Existing, but inactive, project with the same name exists. "
-                    "The project will be re-activated and overwritten. "
-                    "A new payment plan will be setup.\n"
+                        "The project will be re-activated and overwritten. "
+                        "A new payment plan will be setup.\n"
                 ));
                 Console.print(i18nOut("Hosting plan:\n"));
                 Console.print(getProductInfoString(product));
@@ -154,7 +275,7 @@
                     def answer: String = getUserMultipleOptionsAnswer(
                         i18nOut(
                             "Continue? (Type `yes` to proceed, `no` to cancel, "
-                            "or `coupon` to enter a promotion code) "
+                                "or `coupon` to enter a promotion code) "
                         ),
                         Map[String, String]()
                             .set(String("yes"), String("yes"))
@@ -177,7 +298,7 @@
                 productId = product("id");
                 Console.print(i18nOut(
                     "No existing project found with the same name. "
-                    "A new project will be created and a payment plan will be setup for it.\n"
+                        "A new project will be created and a payment plan will be setup for it.\n"
                 ));
                 Console.print(i18nOut("Hosting plan:\n"));
                 Console.print(getProductInfoString(product));
@@ -192,8 +313,8 @@
                 if this.products.getLength() > 1 {
                     prompt = i18nOut(
                         "Continue? (Type `yes` to proceed, `no` to cancel, "
-                        "`plan` to change the hosting plan, "
-                        "or `coupon` to enter a promotion code) "
+                            "`plan` to change the hosting plan, "
+                            "or `coupon` to enter a promotion code) "
                     );
                     options
                         .set(String("plan"), String("plan"))
@@ -201,7 +322,7 @@
                 } else {
                     prompt = i18nOut(
                         "Continue? (Type `yes` to proceed, `no` to cancel, "
-                        "or `coupon` to enter a promotion code) "
+                            "or `coupon` to enter a promotion code) "
                     );
                 }
                 while 1 {
@@ -221,13 +342,13 @@
                 def request: Net.Request(String.format(
                     "%s%s?project=%s&product=%s&promotion_code=%s",
                     host.buf, SETUP_PROJECT_PATH,
-                    Net.uriEncode(config.projectName).buf,
+                    Net.uriEncode(this.projectName).buf,
                     Net.uriEncode(productId).buf,
                     Net.uriEncode(promotionCode).buf
                 ));
                 request.verbose = verbose;
                 request.authType = "Bearer";
-                request.authKey = this.authKey;
+                request.authKey = this.uploadKey;
                 request.post("");
                 if request.responseHttpStatus == 200 {
                     break;
@@ -235,7 +356,7 @@
                     Console.print(
                         i18nOut(
                             "Please setup your payment profile by visiting this URL:\n"
-                            "%s\nPress enter when you're done.\n"
+                                "%s\nPress enter when you're done.\n"
                         ),
                         request.responseBody.buf
                     );
@@ -244,7 +365,7 @@
                     def answer: String = getUserMultipleOptionsAnswer(
                         i18nOut(
                             "Provided promotion code is invalid. Re-enter prmotion code? "
-                            "(Type `yes` to enter a new code or `cancel` to quit) "
+                                "(Type `yes` to enter a new code or `cancel` to quit) "
                         ),
                         Map[String, String]()
                             .set(String("yes"), String("yes"))
@@ -268,13 +389,13 @@
         }
 
         handler this.uploadProject() {
-            def order: String = String("rm -rf \"") + config.projectName + "\"";
+            def order: String = String("rm -rf \"") + this.projectName + "\"";
             System.exec(order);
-            order = String("mv Build \"") + config.projectName + "\"";
+            order = String("mv Build \"") + this.projectName + "\"";
             System.exec(order);
             def tarFilename: String;
-            tarFilename = config.projectName + String(".tar.gz");
-            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + config.projectName + "\" .";
+            tarFilename = this.projectName + String(".tar.gz");
+            order = String("tar cvzf  \"") + tarFilename + "\"  -C \"" + myWorkDir + "/" + this.projectName + "\" .";
             System.exec(order);
             def buffer: UnqRef[array[Char, BATCH_SIZE]];
             buffer.construct();
@@ -295,10 +416,10 @@
                     }
                     def request: Net.Request(String.format(
                         "%s%s?project=%s&port=%i", host.buf, UPLOAD_PROJECT_PATH,
-                        Net.uriEncode(config.projectName).buf, config.serverPort
+                        Net.uriEncode(this.projectName).buf, config.serverPort
                     ));
                     request.verbose = verbose;
-                    request.authKey = this.authKey;
+                    request.authKey = this.uploadKey;
                     request.authType = "Bearer";
                     request.contentType = "application/octet-stream";
                     request.addHeader(String.format("Content-Total-Length: %i", totalSize~cast[Int]));
@@ -362,10 +483,10 @@
             );
         }
 
-        func formatPrice (f: Float): String {
+        func formatPrice(f: Float): String {
             def result: String;
             if f < 0 {
-                f *= -1;
+                f *=  - 1;
                 result.append('-');
             }
             result.append(f~cast[Int[64]]);
@@ -373,6 +494,11 @@
             result.append('.');
             result._append((fractions * 100.0f64 + 0.5f64)~cast[Int[64]], 2);
             return result;
+        }
+
+        func checkProjectName(projectName: String): Bool {
+            def matcher: Regex.Matcher("^[a-z0-9\\-]+$");
+            return matcher.match(projectName.buf).getLength() > 0;
         }
     }
 }
