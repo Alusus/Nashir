@@ -12,3 +12,6 @@ msgstr "coupon"
 
 msgid "مستوى"
 msgstr "plan"
+
+msgid "رجوع"
+msgstr "back"
