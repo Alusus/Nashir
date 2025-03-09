@@ -143,6 +143,7 @@
                     while 1 {
                         if i18nIn(mfaCode~ptr) == "back" break;
                         def verifyMfaCodeRequest: Net.Request(host + CREATE_AUTH_TOKEN_MFA);
+                        verifyMfaCodeRequest.verbose = verbose;
                         verifyMfaCodeRequest.post(String.format(
                             "{\"username\": \"%s\" , \"password\": \"%s\" , \"code\": \"%s\"}",
                             Json.escape(String(userName~ptr).trim()).buf,
