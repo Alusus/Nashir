@@ -39,7 +39,7 @@ Nashir.setup[Nashir.Config().{
     projectName = "Chat";
     projectVersion = "v1";
     serverPort = 8000;
-    assets.add(String("Assets"));
+    assets.set(String("OtherAssets"), String("OtherAssets"));
     publishDriver = Nashir.AlususNetPublishDriver();
 }];
 ```

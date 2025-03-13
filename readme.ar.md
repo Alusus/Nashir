@@ -56,7 +56,7 @@ Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" }
     اسم_المشروع = "MyProject"؛
     رقم_الإصدار = "v1"؛
     منفذ_الخادم = 8000؛
-    الموارد.أضف(نـص("Assets"))؛
+    الموارد.حدد(نـص("موارد_أخرى")، نـص("موارد_أخرى"))؛
     مشغل_النشر = نـاشر.مـشغل_نشر_الأسس_نت()؛
 }]؛
 ```
@@ -69,7 +69,7 @@ Nashir.setup[Nashir.Config().{
     projectName = "Chat";
     projectVersion = "v1";
     serverPort = 8000;
-    assets.add(String("Assets"));
+    assets.add(String("OtherAssets"), String("OtherAssets"));
     publishDriver = Nashir.AlususNetPublishDriver();
 }];
 ```
