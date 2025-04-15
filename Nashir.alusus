@@ -5,6 +5,7 @@ import "Srl/Fs.alusus";
 import "Spp";
 import "Build";
 import "Apm";
+Apm.importFile("Alusus/AlususNet");
 Apm.importFile("Alusus/ExtendedNet");
 Apm.importFile("Alusus/Json");
 Apm.importFile("Alusus/Crypto");
@@ -21,7 +22,7 @@ import "PublishDrivers/PublishDriver";
     // Paths
     def buildPath: String(1, "Build");
     def nashirPath: String = getThisSourceDirectory[];
-    def myWorkDir: String;
+
 
     // Translation Variables
     def configKeyTranslations: Map[String, String];
@@ -93,6 +94,7 @@ import "PublishDrivers/PublishDriver";
     }
 
     func publish() {
+        def myWorkDir: String;
         def fp: ptr[Fs.File] = Fs.openProcess("pwd", "r");
         def path: array[char, 1035];
         Fs.readLine(path~ptr, 1035, fp);
@@ -132,6 +134,14 @@ import "PublishDrivers/PublishDriver";
             System.fail(1، i18nOut("Build failed."));
         }
     }
+    
+    func restoreDbBackup() {
+        config.publishDriver.restoreDbBackup();
+    }
+    
+    func downloadDbBackup() {
+        config.publishDriver.downloadDbBackup();
+    }
 
     func isWebPlatformInUse(): Bool {
         use Srl;
@@ -146,6 +156,7 @@ import "PublishDrivers/PublishDriver";
     macro setup[options] preprocess { Nashir._setup(options) };
 
     func _setup(conf: ref[Config]) {
+        Console.print("\nI am here!\n")
         config = conf;
 
         // Validate config.
@@ -302,7 +313,27 @@ import "PublishDrivers/PublishDriver";
                         Nashir.build[startExe, serverModules]();
                         Nashir.publish();
                     };
-                }
+                },
+                ProgArg.CmdDef().{ 
+                    kwd = "restore-db";
+                    description = "resture database to the container";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
+                        Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
+                        Nashir.build[startExe, serverModules]();
+                        Nashir.restoreDbBackup();
+                    };
+                },
+                ProgArg.CmdDef().{
+                    kwd = "backup-db";
+                    description = "backup database from the container";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
+                        Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
+                        Nashir.build[startExe, serverModules]();
+                        Nashir.downloadDbBackup();
+                    };
+                },
             });
         };
     }

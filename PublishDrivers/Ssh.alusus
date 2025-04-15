@@ -65,6 +65,14 @@
             }
             Console.print(i18nOut("Publishing completed successfully.\n"));
         }
+        
+        handler (this: PublishDriver).restoreDbBackup() set_ptr {
+            Console.print(i18nOut("Service not supported for ssh.\n"));
+        }
+        
+        handler (this: PublishDriver).downloadDbBackup() set_ptr {
+            Console.print(i18nOut("Service not supported for ssh.\n"));
+        }
 
         handler this.enterInfo() {
             this.username = getUserTextAnswer(i18nOut("Enter SSH username to use for publishing: "), false);
