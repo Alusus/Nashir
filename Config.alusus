@@ -15,6 +15,7 @@
         def startExe: TioRef(nullRef[TiObject]);
         def initializer: TioRef(nullRef[TiObject]);
         def serverModules: TioRef(Root~ast);
+        def apiToken: String = String("");
 
         handler this~init() {}
         Spp.astMgr.insertCopyHandlers[];

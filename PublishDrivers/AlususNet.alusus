@@ -1,28 +1,28 @@
 @merge module Nashir {
     class AlususNetPublishDriver {
         @injection def driver: PublishDriver;
-        def alususNetClient : SrdRef[AlususNetPublisher]
+        def alususNetClient : SrdRef[AlususNetPublisher];
         handler this~init(projName: String) {
-            this.alususNetClient = SrdRef[AlususNetPublisher](projName);
+            this.alususNetClient = AlususNetPublisher(projName,config.apiToken);
         }
 
         handler this_type(): SrdRef[PublishDriver] {
-            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String()) };
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String("")) };
         }
 
         handler this_type(projName: String): SrdRef[PublishDriver] {
             return SrdRef[AlususNetPublishDriver]().{ alloc()~init(projName) };
         }
         handler (this: PublishDriver).publish() set_ptr {
-            alususNetClient.publish(config.serverPort);
+            this.alususNetClient.publish(config.serverPort);
         }
         
         handler (this: PublishDriver).restoreDbBackup() set_ptr {
-            alususNetClient.uploadBackup(config.restore_db_path); 
+            this.alususNetClient.uploadBackup(config.restore_db_path); 
         }
         
         handler (this: PublishDriver).downloadDbBackup() set_ptr {
-            alususNetClient.downloadBackup(config.backup_db_path); 
+            this.alususNetClient.downloadBackup(config.backup_db_path); 
         }
     }
 }
