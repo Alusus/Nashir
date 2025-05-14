@@ -310,42 +310,42 @@ import "PublishDrivers/PublishDriver";
                 ProgArg.CmdDef().{
                     kwd = "publish";
                     description = "Publish the application.";
-                    args = Map[String, String]()
-                        .set(String("apiToken"), String("arg1 (optional).\nThis is your api token to connect with your project"));
+                    options = Map[String, String]()
+                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
                     callback = closure (options: Map[String, String], args: Array[String]) {
                         Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
                         Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
                         Nashir.build[startExe, serverModules]();
-                        if (args.getLength() < 1) {
+                        if (options.getLength() < 1) {
                             Nashir.publish(String(""));
                         } else {
-                            Nashir.publish(args(0));
+                            Nashir.publish(options(String("apiToken")));
                         }
                     }
                 },
                 ProgArg.CmdDef().{
                     kwd = "restore-db";
-                    description = "resture database to the container";
-                    args = Map[String, String]()
-                        .set(String("apiToken"), String("arg1 (optional).\nThis is your api token to connect with your project"));
+                    description = "Restore database to the container";
+                    options = Map[String, String]()
+                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
                     callback = closure (options: Map[String, String], args: Array[String]) {
-                        if (args.getLength() < 1) {
+                        if (options.getLength() < 1) {
                             Nashir.restoreDbBackup(String(""));
                         } else {
-                            Nashir.restoreDbBackup(args(0));
+                            Nashir.restoreDbBackup(options(String("apiToken")));
                         }
                     }
                 },
                 ProgArg.CmdDef().{
                     kwd = "backup-db";
-                    description = "backup database from the container";
-                    args = Map[String, String]()
-                        .set(String("apiToken"), String("arg1 (optional).\nThis is your api token to connect with your project"));
+                    description = "Download database backup from the container";
+                    options = Map[String, String]()
+                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
                     callback = closure (options: Map[String, String], args: Array[String]) {
-                        if (args.getLength() < 1) {
+                        if (options.getLength() < 1) {
                             Nashir.downloadDbBackup(String(""));
                         } else {
-                            Nashir.downloadDbBackup(args(0));
+                            Nashir.downloadDbBackup(options(String("apiToken")));
                         }
                     }
                 }
