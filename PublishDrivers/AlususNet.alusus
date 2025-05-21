@@ -14,14 +14,17 @@
             return SrdRef[AlususNetPublishDriver]().{ alloc()~init(projName) };
         }
         handler (this: PublishDriver).publish() set_ptr {
-            this.alususNetClient.publish(config.serverPort);
+            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
+            this.alususNetClient.publish(config.serverPort,String(""),String("start"));
         }
         
         handler (this: PublishDriver).restoreDbBackup() set_ptr {
+            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
             this.alususNetClient.uploadBackup(config.restore_db_path); 
         }
         
         handler (this: PublishDriver).downloadDbBackup() set_ptr {
+            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
             this.alususNetClient.downloadBackup(config.backup_db_path); 
         }
     }
