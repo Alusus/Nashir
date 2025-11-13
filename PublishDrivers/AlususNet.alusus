@@ -1,32 +1,46 @@
+Apm.importFile("Alusus/AlususNet");
+
 @merge module Nashir {
     class AlususNetPublishDriver {
         @injection def driver: PublishDriver;
-        def alususNetClient : SrdRef[AlususNetPublisher];
-        handler this~init(projName: String) {
-            this.alususNetClient = AlususNetPublisher(projName,config.apiToken);
+        def publishProjectName: String;
+        def apiToken: String;
+
+        handler this~init(projName: String, apiToken: String) {
+            this.publishProjectName = projName;
+            this.apiToken = apiToken;
         }
 
         handler this_type(): SrdRef[PublishDriver] {
-            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String("")) };
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String(), String()) };
         }
 
-        handler this_type(projName: String): SrdRef[PublishDriver] {
-            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(projName) };
+        handler this_type(pubProjName: String): SrdRef[PublishDriver] {
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(pubProjName, String()) };
         }
+
+        handler this_type(pubProjName: String, apiTok: String): SrdRef[PublishDriver] {
+            return SrdRef[AlususNetPublishDriver]().{ alloc()~init(pubProjName, apiTok) };
+        }
+
+        handler this.projectName: String {
+            if this.publishProjectName != "" return this.publishProjectName
+            else return config.projectName;
+        }
+
         handler (this: PublishDriver).publish() set_ptr {
-            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
-            this.alususNetClient.publish(config.serverPort,String(""),String("start"));
+            def alususNetClient: AlususNet.Client(this.projectName, this.apiToken, verbose);
+            alususNetClient.publish(config.serverPort, buildPath, String("start"));
         }
         
         handler (this: PublishDriver).restoreDbBackup() set_ptr {
-            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
-            this.alususNetClient.uploadBackup(config.restore_db_path); 
+            def alususNetClient: AlususNet.Client(this.projectName, this.apiToken, verbose);
+            alususNetClient.uploadBackup(config.dbRestorePath);
         }
         
         handler (this: PublishDriver).downloadDbBackup() set_ptr {
-            this.alususNetClient = AlususNetPublisher(this.alususNetClient.projectName,config.apiToken);
-            this.alususNetClient.downloadBackup(config.backup_db_path); 
+            def alususNetClient: AlususNet.Client(this.projectName, this.apiToken, verbose);
+            alususNetClient.downloadBackup(config.dbBackupPath);
         }
     }
 }
-

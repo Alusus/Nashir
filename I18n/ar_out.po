@@ -45,3 +45,27 @@ msgstr "أدخل المسار على الخادم حيث سيخزن البرنا
 
 msgid "Enter the name of the systemd service to be restarted after publishing, or leave this empty to skip service restarting: "
 msgstr "أدخل اسم خدمة systemd التي سيتم إعادة تشغيلها بعد النشر، أو اترك الحقل فارغًا لتجاوز إعادة تشغيل الخدمة: "
+
+msgid "Nashir initialization error."
+msgstr "خطأ أثناء تهيئة الناشر."
+
+msgid "`projectName` is missing in config."
+msgstr "قيمة اسم المشروع مفقودة في الإعدادات."
+
+msgid "`projectVersion` is missing in config."
+msgstr "قيمة رقم الإصدار مفقودة في الإعدادات."
+
+msgid "`serverPort` is missing in config."
+msgstr "قيمة منفذ الخادم مفقودة في الإعدادات."
+
+msgid "`publishDriver` is missing in config."
+msgstr "مشغل النشر مفقود في الإعدادات."
+
+msgid "`startJit` and `startExe` should be either both set or both unset in config."
+msgstr "دالتا البداية الآنية والبداية المبنية متلازمتان، فلا يجوز في الإعدادات تحديد إحداهما دون الأخرى."
+
+msgid "`initializer` should not be provided when startJit and startExe are provided in the config."
+msgstr "المهيئ في الإعدادات ممنوع عند توفير دالتي البداية الآنية والمبنية"
+
+msgid "%s\nVersion: %s\n\n"
+msgstr "%s\nرقم الإصدار: %s\n\n"

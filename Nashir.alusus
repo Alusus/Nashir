@@ -10,7 +10,6 @@ Apm.importFile("Alusus/Json");
 Apm.importFile("Alusus/Crypto");
 Apm.importFile("Alusus/I18n");
 Apm.importFile("Alusus/ProgArg");
-Apm.importFile("Alusus/AlususNet");
 
 import "Config";
 import "PublishDrivers/PublishDriver";
@@ -18,7 +17,7 @@ import "PublishDrivers/PublishDriver";
 @merge module Nashir {
     use Srl;
     use Core.Basic;
-    use AlususNet;
+
     // Paths
     def buildPath: String(1, "Build");
     def nashirPath: String = getThisSourceDirectory[];
@@ -38,13 +37,13 @@ import "PublishDrivers/PublishDriver";
     func initializeTranslations {
         def poContent: Srl.String;
         poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_out.po");
-        if poContent != ""Nashir.i18nOut.add(poContent);
+        if poContent != "" Nashir.i18nOut.add(poContent);
         poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_in.po");
-        if poContent != ""Nashir.i18nIn.add(poContent);
+        if poContent != "" Nashir.i18nIn.add(poContent);
         poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_args_out.po");
-        if poContent != ""ProgArg.i18nOut.add(poContent);
+        if poContent != "" ProgArg.i18nOut.add(poContent);
         poContent = Fs.readFile(Nashir.nashirPath + "/I18n/" + Process.language + "_args_in.po");
-        if poContent != ""ProgArg.i18nIn.add(poContent);
+        if poContent != "" ProgArg.i18nIn.add(poContent);
     }
 
     macro handleUnexpectedCommunicationError {
@@ -59,17 +58,18 @@ import "PublishDrivers/PublishDriver";
             .set(String("yes"), String("yes"))
             .set(String("y"), String("yes"))
             .set(String("no"), String("no"))
-            .set(String("n"), String("no")));
+            .set(String("n"), String("no"))
+        );
     }
 
     func getUserMultipleOptionsAnswer(prompt: String, options: Map[String, String]): String {
         def ret: String;
         while 1 {
-            if prompt != ""Console.print(prompt);
+            if prompt != "" Console.print(prompt);
             def answer: array[Char, 100];
             Console.getString(answer~ptr, 100);
             ret = i18nIn(answer~ptr).toLowerCase();
-            if options.findPos(ret) ==  - 1 {
+            if options.findPos(ret) ==  -1 {
                 Console.print(i18nOut("Invalid entry.\n"));
                 continue;
             }
@@ -82,17 +82,17 @@ import "PublishDrivers/PublishDriver";
     func getUserTextAnswer(prompt: String, allowEmpty: Bool): String {
         def result: String;
         while 1 {
-            if prompt != ""Console.print(prompt);
+            if prompt != "" Console.print(prompt);
             def answer: array[Char, 1024];
             Console.getString(answer~ptr, 1024);
             result = String(answer~ptr).trim();
-            if result != ""or allowEmpty break;
+            if result != "" or allowEmpty break;
             Console.print(i18nOut("Invalid entry.\n"));
         }
         return result;
     }
 
-    func publish(apiToken : String) {
+    func publish() {
         def fp: ptr[Fs.File] = Fs.openProcess("pwd", "r");
         def path: array[char, 1035];
         Fs.readLine(path~ptr, 1035, fp);
@@ -100,21 +100,18 @@ import "PublishDrivers/PublishDriver";
         myWorkDir = String(path~ptr);
         // Remove the \n from the end of the string.
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
-        config.apiToken = apiToken;
         config.publishDriver.publish();
     }
 
-    func restoreDbBackup(apiToken : String) {
-        config.apiToken = apiToken;
+    func restoreDbBackup() {
         config.publishDriver.restoreDbBackup();
     }
 
-    func downloadDbBackup(apiToken : String) {
-        config.apiToken = apiToken;
+    func downloadDbBackup() {
         config.publishDriver.downloadDbBackup();
     }
 
-    func build[start: ast_ref, modules: ast_ref = Root]() {
+    func build [start: ast_ref, modules: ast_ref = Root] () {
         def i: Int;
         for i = 0, i < config.assets.getLength(), ++i {
             System.exec(String.format(
@@ -162,12 +159,12 @@ import "PublishDrivers/PublishDriver";
         config = conf;
 
         // Validate config.
-        if config.projectName == ""raiseInitializeError("`projectName` is missing in config.");
-        if config.projectVersion == ""raiseInitializeError("`projectVersion` is missing in config.");
+        if config.projectName == "" raiseInitializeError("`projectName` is missing in config.");
+        if config.projectVersion == "" raiseInitializeError("`projectVersion` is missing in config.");
         if config.serverPort == 0 raiseInitializeError("`serverPort` is missing in config.");
         if config.publishDriver.isNull() raiseInitializeError("`publishDriver` is missing in config.");
         if (config.startJit~ptr == 0 and config.startExe~ptr != 0)
-            or(config.startJit~ptr != 0 and config.startExe~ptr == 0) {
+        or (config.startJit~ptr != 0 and config.startExe~ptr == 0) {
             raiseInitializeError("`startJit` and `startExe` should be either both set or both unset in config.");
         }
         if config.startJit~ptr != 0 and config.initializer~ptr != 0 {
@@ -178,7 +175,7 @@ import "PublishDrivers/PublishDriver";
 
         preprocess {
             if isWebPlatformInUse() {
-                Spp.astMgr.insertAst(ast{
+                Spp.astMgr.insertAst(ast {
                     if config.startJit~ptr == 0 config.dependencies.add(WebPlatform.getBuildDependencies());
                     def assetRoutes: Array[WebPlatform.StaticRoute];
                     assetRoutes = WebPlatform.getAssetsRoutesFromModules(config.serverModules);
@@ -203,9 +200,9 @@ import "PublishDrivers/PublishDriver";
             if config.initializer~ptr == 0 initializer~no_deref = ast Nashir.dummyInitializer
             else initializer~no_deref = initializerPassage;
             Spp.astMgr.insertAst(
-                ast{
+                ast {
                     Nashir.generateWebPlatformEntryPoints[
-                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr](serverOptions), initializer
+                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr]({ serverOptions }), initializer
                     ];
                 },
                 Map[String, TioRef]()
@@ -221,8 +218,9 @@ import "PublishDrivers/PublishDriver";
             startExe~no_deref = startExePassage;
         }
         Spp.astMgr.insertAst(
-            ast{
+            ast {
                 Nashir.initializeProgArg[startExe, startJit, serverModules];
+                Nashir.initializeTranslations();
             },
             Map[String, TioRef]()
                 .set(String("startJit"), startJit)
@@ -288,7 +286,7 @@ import "PublishDrivers/PublishDriver";
                     Nashir.config.projectVersion.buf
                 );
                 ProgArg.printHelp(2);
-            }
+            };
 
             subCmds = Array[SrdRef[ProgArg.CmdDef]]({
                 ProgArg.CmdDef().{
@@ -296,7 +294,7 @@ import "PublishDrivers/PublishDriver";
                     description = "Start the application.";
                     callback = closure (options: Map[String, String], args: Array[String]) {
                         startJit();
-                    }
+                    };
                 },
                 ProgArg.CmdDef().{
                     kwd = "build";
@@ -305,53 +303,33 @@ import "PublishDrivers/PublishDriver";
                         Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
                         Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
                         Nashir.build[startExe, serverModules]();
-                    }
+                    };
                 },
                 ProgArg.CmdDef().{
                     kwd = "publish";
                     description = "Publish the application.";
-                    options = Map[String, String]()
-                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
                     callback = closure (options: Map[String, String], args: Array[String]) {
                         Srl.System.exec(String("mkdir -p ") + Nashir.buildPath);
                         Srl.System.exec(String("rm -rf ") + Nashir.buildPath + "/*");
                         Nashir.build[startExe, serverModules]();
-                        if (options.getLength() < 1) {
-                            Nashir.publish(String(""));
-                        } else {
-                            Nashir.publish(options(String("apiToken")));
-                        }
-                    }
+                        Nashir.publish();
+                    };
                 },
                 ProgArg.CmdDef().{
                     kwd = "restore-db";
-                    description = "Restore database to the container";
-                    options = Map[String, String]()
-                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
+                    description = "Upload and restore a database to the container.";
                     callback = closure (options: Map[String, String], args: Array[String]) {
-                        if (options.getLength() < 1) {
-                            Nashir.restoreDbBackup(String(""));
-                        } else {
-                            Nashir.restoreDbBackup(options(String("apiToken")));
-                        }
-                    }
+                        Nashir.restoreDbBackup();
+                    };
                 },
                 ProgArg.CmdDef().{
                     kwd = "backup-db";
-                    description = "Download database backup from the container";
-                    options = Map[String, String]()
-                        .set(String("apiToken"), String("Option 1.\nThis is your api token to connect with your project"))
+                    description = "Backup the database of the container and download the backup.";
                     callback = closure (options: Map[String, String], args: Array[String]) {
-                        if (options.getLength() < 1) {
-                            Nashir.downloadDbBackup(String(""));
-                        } else {
-                            Nashir.downloadDbBackup(options(String("apiToken")));
-                        }
-                    }
+                        Nashir.downloadDbBackup();
+                    };
                 }
             });
         };
     }
 }
-
-Nashir.initializeTranslations();
