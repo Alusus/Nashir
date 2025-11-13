@@ -69,7 +69,7 @@ import "PublishDrivers/PublishDriver";
             def answer: array[Char, 100];
             Console.getString(answer~ptr, 100);
             ret = i18nIn(answer~ptr).toLowerCase();
-            if options.findPos(ret) == -1 {
+            if options.findPos(ret) ==  -1 {
                 Console.print(i18nOut("Invalid entry.\n"));
                 continue;
             }
@@ -101,6 +101,14 @@ import "PublishDrivers/PublishDriver";
         // Remove the \n from the end of the string.
         myWorkDir = myWorkDir.slice(0, myWorkDir.getLength() - 1);
         config.publishDriver.publish();
+    }
+
+    func restoreDbBackup() {
+        config.publishDriver.restoreDbBackup();
+    }
+
+    func downloadDbBackup() {
+        config.publishDriver.downloadDbBackup();
     }
 
     func build [start: ast_ref, modules: ast_ref = Root] () {
@@ -143,7 +151,9 @@ import "PublishDrivers/PublishDriver";
         return webPlatform.getLength() > 0;
     }
 
-    macro setup[options] preprocess { Nashir._setup(options) };
+    macro setup[options] preprocess {
+        Nashir._setup(options)
+    }
 
     func _setup(conf: ref[Config]) {
         config = conf;
@@ -192,7 +202,7 @@ import "PublishDrivers/PublishDriver";
             Spp.astMgr.insertAst(
                 ast {
                     Nashir.generateWebPlatformEntryPoints[
-                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr](serverOptions), initializer
+                        assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr]({ serverOptions }), initializer
                     ];
                 },
                 Map[String, TioRef]()
@@ -210,6 +220,7 @@ import "PublishDrivers/PublishDriver";
         Spp.astMgr.insertAst(
             ast {
                 Nashir.initializeProgArg[startExe, startJit, serverModules];
+                Nashir.initializeTranslations();
             },
             Map[String, TioRef]()
                 .set(String("startJit"), startJit)
@@ -252,7 +263,7 @@ import "PublishDrivers/PublishDriver";
         }
 
         @expname[main]
-        func _startExe (argCount: Int، args: ptr[array[CharsPtr]]): Int {
+        func _startExe(argCount: Int، args: ptr[array[CharsPtr]]): Int {
             initializer();
             Srl.Console.print("Starting server on port %d...\nURL: http://localhost:%d/\n", serverPort, serverPort);
             def port: String;
@@ -276,6 +287,7 @@ import "PublishDrivers/PublishDriver";
                 );
                 ProgArg.printHelp(2);
             };
+
             subCmds = Array[SrdRef[ProgArg.CmdDef]]({
                 ProgArg.CmdDef().{
                     kwd = "start";
@@ -302,10 +314,22 @@ import "PublishDrivers/PublishDriver";
                         Nashir.build[startExe, serverModules]();
                         Nashir.publish();
                     };
+                },
+                ProgArg.CmdDef().{
+                    kwd = "restore-db";
+                    description = "Upload and restore a database to the container.";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Nashir.restoreDbBackup();
+                    };
+                },
+                ProgArg.CmdDef().{
+                    kwd = "backup-db";
+                    description = "Backup the database of the container and download the backup.";
+                    callback = closure (options: Map[String, String], args: Array[String]) {
+                        Nashir.downloadDbBackup();
+                    };
                 }
             });
         };
     }
 }
-
-Nashir.initializeTranslations();

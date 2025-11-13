@@ -1,113 +1,20 @@
 msgid "Unexpected communication error! Retry? "
 msgstr "خطأ غير متوقع في الاتصال. أترغب بإعادة المحاولة؟ "
 
-msgid "\nExisting auth key is no longer valid. Requesting a new auth key.\n"
-msgstr "\nمفتاح التوثيق الحالي غير صالح. سيُطلب مفتاح جديد.\n"
-
-msgid "Enter username: \n>"
-msgstr "أدخل اسم المستخدم: \n>"
-
-msgid "Enter password: \n>"
-msgstr "أدخل كلمة السر: \n>"
-
-msgid "Authentication error. Invalid username or password.\n"
-msgstr "خطأ في المصادقة. اسم المستخدم أو كلمة السر غير صالحة.\n"
-
-msgid "Authentication error. Invalid password.\n"
-msgstr "خطأ في المصادقة. كلمة السر غير صالحة.\n"
-
-msgid "Authentication error. Invalid username.\n"
-msgstr "خطأ في المصادقة. اسم المستخدم غير صالح.\n"
-
-msgid "Authentication error.\n"
-msgstr "خطأ في المصادقة.\n"
-
-msgid "Existing project with the same name exists. The project will be overwritten. Continue (yes/no)? "
-msgstr "يوجد مشروع حالي بنفس الاسم. ستؤدي العملية لاستبداله بالنسخة الجديدة. أترغب بالاستمرار (نعم/لا)؟ "
-
-msgid "Existing, but inactive, project with the same name exists. "
-"This project is in an invalid state and cannot be re-activated. "
-"Contact AlususNet's support to resolve the issue, or change your "
-"project's name to create a new project on AlususNet.\n"
-msgstr "يوجد مشروع حالي بنفس الاسم لكنه غير مفعّل. هذا المشروع في حالة غير صالحة ولا يمكن إعادة تفعيله. "
-"اتصل بخدمة عملاء الأسس نت لحل المشكلة، أو غير اسم المشروع لإنشاء مشروع جديد على الأسس نت.\n"
-
-msgid "Existing, but inactive, project with the same name exists. "
-"The project will be re-activated and overwritten. "
-"A new payment plan will be setup.\n"
-msgstr "يوجد مشروع حالي بنفس الاسم لكنه غير مفعّل. ستؤدي العملية إلى تفعيله وتحديث شفرته "
-"وسيؤدي ذلك إلى إنشاء خطة دفع إلكتروني جديدة.\n"
-
-msgid "No existing project found with the same name. "
-"A new project will be created and a payment plan will be setup for it.\n"
-msgstr "لا يوجد مشروع بهذا الاسم. ستؤدي العملية إلى إنشاء مشروع جديد وإنشاء خطة دفع إلكتروني جديدة.\n"
-
-msgid "Some operation is currently in progress on this project's container. Retry (yes/no)? "
-msgstr "بعض العمليات تتم حاليًا في الخادم على هذا المشروع ويجب الانتظار حتى تكتمل تلك العمليات. إعادة المحاولة (نعم/لا)؟ "
-
-msgid "Continue? (Type `yes` to proceed, `no` to cancel, "
-"or `coupon` to enter a promotion code) "
-msgstr "أترغب بالاستمرار؟ (أدخل `نعم` للاستمرار أو `لا` للإلغاء أو `قسيمة` لإدخال رمزٍ ترويجي) "
-
-msgid "Continue? (Type `yes` to proceed, `no` to cancel, "
-"`plan` to change the hosting plan, "
-"or `coupon` to enter a promotion code) "
-msgstr "أترغب بالاستمرار؟ (أدخل `نعم` للاستمرار أو `لا` للإلغاء أو `مستوى` لاختيار مستوى خدمة الاستضافة"
-" أو `قسيمة` لإدخال رمزٍ ترويجي) "
-
-msgid "Enter promotion code: "
-msgstr "أدخل الرمز الترويجي: "
-
-msgid "Please setup your payment profile by visiting this URL:\n"
-"%s\nPress enter when you're done.\n"
-msgstr "يُرجى ضبط إعدادات الدفع عبر هذا الرابط:\n%s\nاضغط زر الإدخال عند الانتهاء.\n"
-
-msgid "Hosting plan:\n"
-msgstr "مستوى خدمة الاستضافة:\n"
-
-msgid "%s - %s.\nMonthly cost: $%s USD\n"
-msgstr "%s - %s.\nالكلفة الشهرية: $%s دولار أمريكي\n"
-
-msgid "Select a plan:\n"
-msgstr "اختر مستوى خدمة الاستضافة:\n"
-
-msgid "Deployment successful.\n"
-msgstr "تم النشر بنجاح.\n"
-
-msgid "Upload failed. File is too big!\n"
-msgstr "فشل التحميل. الملف أكبر من الحجم الأقصى!\n"
-
-msgid "Unexpected error. Try re-starting the deployment.\n"
-msgstr "خطأ غير متوقع. يُرجى إعادة تشغيل عملية النشر.\n"
+msgid "Invalid entry.\n"
+msgstr "مدخلة غير صالحة.\n"
 
 msgid "Build complete.\n"
 msgstr "اكتمل البناء.\n"
 
-msgid "Program uploaded.\n"
-msgstr "حُمل البرنامج.\n"
-
-msgid "Invalid entry.\n"
-msgstr "مدخلة غير صالحة.\n"
-
 msgid "Build failed."
 msgstr "فشل البناء."
 
-msgid "Failed to fetch product info from AlususNet\n"
-msgstr "فشل جلب بيانات المنتجات من الأسس نت\n"
-
-msgid "Project name is not valid.\n"
-msgstr "اسم المشروع غير صالح.\n"
-
-msgid "Enter promotion code or leave empty to proceed without a promotion code: "
-msgstr "أدخل رمزًا ترويجيًا أو اترك الحقل فارغًا للاستمرار بدون رمزٍ ترويجي: "
-
-msgid "Provided promotion code is invalid. Re-enter prmotion code? "
-"(Type `yes` to enter a new code or `cancel` to quit) "
-msgstr "الرمز الترويجي المدخل غير صالح. أترغب بإدخال رمز جديد؟ "
-"(أدخل `نعم` لإدخال رمز جديد أو `ألغ` للخروج) "
-
 msgid "Publishing failed: Uploading to the server failed."
 msgstr "فشل النشر: فشل التحميل إلى الخادم."
+
+msgid "Program uploaded.\n"
+msgstr "حُمل البرنامج.\n"
 
 msgid "Publishing failed: Restarting the service failed."
 msgstr "فشل النشر: فشلت إعادة تشغيل الخدمة."
@@ -117,6 +24,9 @@ msgstr "أُعيد تشغيل الخدمة.\n"
 
 msgid "Publishing completed successfully.\n"
 msgstr "تم النشر بنجاح.\n"
+
+msgid "Service not supported for ssh.\n"
+msgstr "الخدمة غير مدعومة عبر SSH.\n"
 
 msgid "Enter SSH username to use for publishing: "
 msgstr "أدخل اسم المستخدم لجلسة SSH المستخدمة للنشر: "
@@ -133,46 +43,29 @@ msgstr "رقم المنفذ غير صالح.\n"
 msgid "Enter path on the server where the code will be published: "
 msgstr "أدخل المسار على الخادم حيث سيخزن البرنامج: "
 
-msgid "Enter the name of the systemd service to be restarted after publishing, "
-"or leave this empty to skip service restarting: "
-msgstr "أدخل اسم خدمة systemd التي سيتم إعادة تشغيلها بعد النشر، "
-"أو اترك الحقل فارغًا لتجاوز إعادة تشغيل الخدمة: "
-
-msgid "Uploading: %d%%"
-msgstr "تحميل: %d%%"
-
-msgid "Invalid project name. It should only contain lowercase letters, numbers, hyphens (-), and must not start or end with a hyphen.\n"
-msgstr "اسم المشروع غير صالح. يجب أن يحتوي فقط على أحرف صغيرة، أرقام، وشرطات (-)، ويجب ألا يبدأ أو ينتهي بشرطة.\n"
-
-msgid "Enter mfaCode or enter back to logIn agin: \n>"
-msgstr "أدخل رمز التحقق متعدد العوامل أو ادخل رجوع للعودة الى تسجيل الدخول: \n>"
-
-msgid "The account is locked due to multiple incorrect password attempts. Please try again later.\n"
-msgstr "تم قفل الحساب بسبب محاولات متعددة لإدخال كلمة مرور غير صحيحة. يرجى المحاولة مرة أخرى لاحقًا.\n"
-
-msgid "Entered information is invalid!\n"
-msgstr "المعلومات المدخلة غير صحيحة!\n"
-
-msgid "%s\nVersion: %s\n\n"
-msgstr "%s\nالإصدار: %s\n\n"
+msgid "Enter the name of the systemd service to be restarted after publishing, or leave this empty to skip service restarting: "
+msgstr "أدخل اسم خدمة systemd التي سيتم إعادة تشغيلها بعد النشر، أو اترك الحقل فارغًا لتجاوز إعادة تشغيل الخدمة: "
 
 msgid "Nashir initialization error."
-msgstr "خطأ في تهيئة الناشر."
+msgstr "خطأ أثناء تهيئة الناشر."
 
 msgid "`projectName` is missing in config."
-msgstr "`اسم_المشروع` مفقود في الإعدادات."
+msgstr "قيمة اسم المشروع مفقودة في الإعدادات."
 
 msgid "`projectVersion` is missing in config."
-msgstr "`رقم_الإصدار` مفقود في الإعدادات."
+msgstr "قيمة رقم الإصدار مفقودة في الإعدادات."
 
 msgid "`serverPort` is missing in config."
-msgstr "`منفذ_الخادم` مفقود في الاعدادات."
+msgstr "قيمة منفذ الخادم مفقودة في الإعدادات."
 
 msgid "`publishDriver` is missing in config."
-msgstr "`مشغل_النشر` مفقود في الإعدادات."
+msgstr "مشغل النشر مفقود في الإعدادات."
 
 msgid "`startJit` and `startExe` should be either both set or both unset in config."
-msgstr "`بداية_آنية` و بداية_مبنية` يجب أن تُوفرا معًا أو تُهملا معًا في الإعدادات."
+msgstr "دالتا البداية الآنية والبداية المبنية متلازمتان، فلا يجوز في الإعدادات تحديد إحداهما دون الأخرى."
 
 msgid "`initializer` should not be provided when startJit and startExe are provided in the config."
-msgstr "`مهيئ` يجب أن لا تُوفر عند توفير `بداية_آنية` و `بداية_مبنية` في الإعدادات."
+msgstr "المهيئ في الإعدادات ممنوع عند توفير دالتي البداية الآنية والمبنية"
+
+msgid "%s\nVersion: %s\n\n"
+msgstr "%s\nرقم الإصدار: %s\n\n"

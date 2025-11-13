@@ -1,5 +1,7 @@
 @merge module Nashir {
     class PublishDriver {
         handler this.publish() as_ptr;
+        handler this.restoreDbBackup() as_ptr;
+        handler this.downloadDbBackup() as_ptr;
     }
 }

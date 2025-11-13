@@ -65,19 +65,27 @@
             }
             Console.print(i18nOut("Publishing completed successfully.\n"));
         }
+        
+        handler (this: PublishDriver).restoreDbBackup() set_ptr {
+            Console.print(i18nOut("Service not supported for ssh.\n"));
+        }
+        
+        handler (this: PublishDriver).downloadDbBackup() set_ptr {
+            Console.print(i18nOut("Service not supported for ssh.\n"));
+        }
 
         handler this.enterInfo() {
             this.username = getUserTextAnswer(i18nOut("Enter SSH username to use for publishing: "), false);
             this.host = getUserTextAnswer(i18nOut("Enter SSH host to use for publishing: "), false);
             while 1 {
                 this.port = String.parseInt(getUserTextAnswer(
-                    i18nOut("Enter SSH port to use for publishing: "), false)
-                );
+                    i18nOut("Enter SSH port to use for publishing: "), false
+                ));
                 if this.port == 0 Console.print(i18nOut("Invalid port number.\n"))
                 else break;
             }
-            this.serverPath = getUserTextAnswer(i18nOut(
-                "Enter path on the server where the code will be published: "), false
+            this.serverPath = getUserTextAnswer(
+                i18nOut("Enter path on the server where the code will be published: "), false
             );
             this.serviceName = getUserTextAnswer(i18nOut(
                 "Enter the name of the systemd service to be restarted after publishing, "

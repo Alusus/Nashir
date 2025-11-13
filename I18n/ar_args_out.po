@@ -7,6 +7,12 @@ msgstr "ابن"
 msgid "publish"
 msgstr "انشر"
 
+msgid "backup-db"
+msgstr "استنسخ-البيانات"
+
+msgid "restore-db"
+msgstr "استرجع-البيانات"
+
 msgid "Start the application."
 msgstr "ابدأ التطبيق."
 
@@ -15,3 +21,9 @@ msgstr "ابنِ نسخة تنفيذية للتطبيق."
 
 msgid "Publish the application."
 msgstr "انشر التطبيق إلى الخادم."
+
+msgid "Backup the database of the container and download the backup."
+msgstr "استنسخ قاعدة البيانات من الحاوية وحمل النسخة الاحتياطية."
+
+msgid "Upload and restore a database to the container."
+msgstr "ارفع واسترجع قاعدة البيانات إلى الحاوية."
