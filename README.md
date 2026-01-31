@@ -1,5 +1,5 @@
 # Nashir
-[[عربي]](readme.ar.md)
+[[عربي]](README.ar.md)
 
 A library to facilitate building and deploying projects. This library is designed to allow the
 addition of drivers for various hosting services. Currently, two drivers are available: one
@@ -172,4 +172,12 @@ the path on the server where the uploaded files will be stored.
 The fifth argument is optional, and it's the name of the systemd service used to run
 the project. If this argument is provided that systemd service will be restarted
 after publishing.
+
+---
+
+## License
+
+Copyright (C) 2026 Alusus Software Ltd.
+
+This project is licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0). See the `COPYING` and `COPYING.LESSER` files for details.
 
