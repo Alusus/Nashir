@@ -24,11 +24,11 @@ import "Srl/Fs.alusus";
 import "Spp";
 import "Build";
 import "Apm";
-Apm.importFile("Alusus/ExtendedNet");
-Apm.importFile("Alusus/Json");
-Apm.importFile("Alusus/Crypto");
-Apm.importFile("Alusus/I18n");
-Apm.importFile("Alusus/ProgArg");
+Apm.importPackage("Alusus/Sle@0.2", "Srl/Net");
+Apm.importPackage("Alusus/Json@0.2");
+Apm.importPackage("Alusus/Crypto@0.1");
+Apm.importPackage("Alusus/I18n@0.3");
+Apm.importPackage("Alusus/ProgArg@0.2");
 
 import "Config";
 import "PublishDrivers/PublishDriver";

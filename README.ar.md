@@ -14,14 +14,14 @@
 
 ```
 اشمل "مـحا"؛
-مـحا.اشمل_ملف("Alusus/Nashir"، { "نـاشر.أسس"، "مـشغلات_نشر/الـأسس_نت.أسس" })؛
+مـحا.اشمل_حزمة("Alusus/Nashir@0.6"، { "نـاشر.أسس"، "مـشغلات_نشر/الـأسس_نت.أسس" })؛
 ```
 
 <div dir=ltr>
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
 ```
 
 </div>
@@ -30,14 +30,14 @@ Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/AlususNet.alu
 
 ```
 اشمل "مـحا"؛
-مـحا.اشمل_ملف("Alusus/Nashir"، { "نـاشر.أسس"، "مـشغلات_نشر/بـروتوكول_النقل_الآمن.أسس" })؛
+مـحا.اشمل_حزمة("Alusus/Nashir@0.6"، { "نـاشر.أسس"، "مـشغلات_نشر/بـروتوكول_النقل_الآمن.أسس" })؛
 ```
 
 <div dir=ltr>
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
 ```
 
 </div>

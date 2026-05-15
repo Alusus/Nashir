@@ -14,14 +14,14 @@ These steps assume you already have a web application and want to publish it.
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
 ```
 
 or to use SSh driver:
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Nashir", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
 ```
 
 * Configure the Nashir library at the end of your program using the setup macro. You can set the
