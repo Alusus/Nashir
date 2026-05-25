@@ -10,69 +10,77 @@ the SSH protocol for project deployment.
 
 These steps assume you already have a web application and want to publish it.
 
-* Add the Nashir library to the project, including the requested driver:
-
-  ```
-  import "Apm";
-  Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
-  ```
+### Add Nashir 
   
-  or to use SSh driver:
+Add the Nashir library to the project, including the requested driver:
+
+```
+import "Apm";
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
+```
   
-  ```
-  import "Apm";
-  Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
-  ```
+or to use SSh driver:
+  
+```
+import "Apm";
+Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
+```
 
-* Configure the Nashir library at the end of your program using the setup macro. You can set the
-  verbose value to 1 to get more detailed information during project deployment. The macro takes
-  a single argument, which is an object of the Config class. This macro will handle configuring
-  the Nashir settings and the ProgArg library settings, which Nashir uses to process user inputs.
-  If the program uses the Web Platform library, this macro will also create the two main functions
-  responsible for starting the program and running the server, unless the user provides these
-  functions themselves. Nashir requires two separate functions: one to run the server directly
-  without building, and another to serve as the program's entry point in case of building.
+### Configure Nashir
 
-  ```
-  Nashir.verbose = false;
-  Nashir.setup[Nashir.Config().{
-      projectName = "Chat";
-      projectVersion = "v1";
-      serverPort = 8000;
-      assets.set(String("OtherAssets"), String("OtherAssets"));
-      publishDriver = Nashir.AlususNetPublishDriver();
-  }];
-  ```
+Configure the Nashir library at the end of your program using the setup macro. You can set the
+verbose value to 1 to get more detailed information during project deployment. The macro takes
+a single argument, which is an object of the Config class. This macro will handle configuring
+the Nashir settings and the ProgArg library settings, which Nashir uses to process user inputs.
+If the program uses the Web Platform library, this macro will also create the two main functions
+responsible for starting the program and running the server, unless the user provides these
+functions themselves. Nashir requires two separate functions: one to run the server directly
+without building, and another to serve as the program's entry point in case of building.
 
-* Nashir relies on the ProgArg library to parse program arguments. After calling the setup macro,
-  Nashir will have completed the initialization of commands in ProgArg, and you can now ask ProgArg
-  to process user inputs.
+```
+Nashir.verbose = false;
+Nashir.setup[Nashir.Config().{
+    projectName = "Chat";
+    projectVersion = "v1";
+    serverPort = 8000;
+    assets.set(String("OtherAssets"), String("OtherAssets"));
+    publishDriver = Nashir.AlususNetPublishDriver();
+}];
+```
 
-  ```
-  ProgArg.parse(2);
-  ```
+### Parse arguments
 
-* After finishing these steps you'll be able to run the app directly:
+Nashir relies on the ProgArg library to parse program arguments. After calling the setup macro,
+Nashir will have completed the initialization of commands in ProgArg, and you can now ask ProgArg
+to process user inputs.
 
-  ```
-  alusus main.alusus start
-  ```
+```
+ProgArg.parse(2);
+```
 
-  And you can build an executable app:
+### Run&Publish
 
-  ```
-  alusus main.alusus build
-  ```
+After finishing the previous steps you'll be able to run the app directly:
 
-  And you can publish the app to AlususNet using the `publish` command:
+```
+alusus main.alusus start
+```
 
-  ```
-  alusus main.alusus publish
-  ```
+And you can build an executable app:
 
-  When calling the publish command, the library will build an executable version of the project,
-  then prompt you to log in to your Alusus Net account, upload the project to the server, and
-  run it automatically. Follow the instructions that appear to complete the deployment.
+```
+alusus main.alusus build
+```
+
+And you can publish the app to AlususNet using the `publish` command:
+
+```
+alusus main.alusus publish
+```
+
+When calling the publish command, the library will build an executable version of the project,
+then prompt you to log in to your Alusus Net account, upload the project to the server, and
+run it automatically. Follow the instructions that appear to complete the deployment.
 
 ## Reference
 
