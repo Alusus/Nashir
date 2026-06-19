@@ -58,7 +58,7 @@ to process user inputs.
 ProgArg.parse(2);
 ```
 
-### Run&Publish
+### Run & Publish
 
 After finishing the previous steps you'll be able to run the app directly:
 
@@ -212,8 +212,6 @@ the path on the server where the uploaded files will be stored.
 The fifth argument is optional, and it's the name of the systemd service used to run
 the project. If this argument is provided that systemd service will be restarted
 after publishing.
-
-
 
 ## License
 

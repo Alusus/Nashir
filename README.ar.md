@@ -17,14 +17,12 @@
 ```
 اشمل "مـحا"؛
 مـحا.اشمل_حزمة("Alusus/Nashir@0.6"، { "نـاشر.أسس"، "مـشغلات_نشر/الـأسس_نت.أسس" })؛
-
 ```
 <div dir=ltr>
 
 ```
 import "Apm";
 Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
-
 ```
 
 </div>
@@ -34,7 +32,6 @@ Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Alusus
 ```
 اشمل "مـحا"؛
 مـحا.اشمل_حزمة("Alusus/Nashir@0.6"، { "نـاشر.أسس"، "مـشغلات_نشر/بـروتوكول_النقل_الآمن.أسس" })؛
-
 ```
 
 <div dir=ltr>
@@ -42,7 +39,6 @@ Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Alusus
 ```
 import "Apm";
 Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
-
 ```
 
 </div>
@@ -101,6 +97,7 @@ ProgArg.parse(2);
 </div>
 
 ### تشغيل ونشر
+
 بعد إتمام هذه الخطوات سيمكنك تشغيل التطبيق مباشرة كما يلي:
 
 ```
