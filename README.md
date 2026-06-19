@@ -92,7 +92,6 @@ The class contains the following variables:
 
 * `projectVersion: String`
 
-
 * `serverPort: Int`
 
 * `serverOptions: Array[CharsPtr]` 
