@@ -10,28 +10,32 @@ the SSH protocol for project deployment.
 
 These steps assume you already have a web application and want to publish it.
 
-* Add the Nashir library to the project, including the requested driver:
+### Add Nashir 
+  
+Add the Nashir library to the project, including the requested driver:
 
 ```
 import "Apm";
 Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/AlususNet.alusus" });
 ```
-
+  
 or to use SSh driver:
-
+  
 ```
 import "Apm";
 Apm.importPackage("Alusus/Nashir@0.6", { "Nashir.alusus", "PublishDrivers/Ssh.alusus" });
 ```
 
-* Configure the Nashir library at the end of your program using the setup macro. You can set the
-  verbose value to 1 to get more detailed information during project deployment. The macro takes
-  a single argument, which is an object of the Config class. This macro will handle configuring
-  the Nashir settings and the ProgArg library settings, which Nashir uses to process user inputs.
-  If the program uses the Web Platform library, this macro will also create the two main functions
-  responsible for starting the program and running the server, unless the user provides these
-  functions themselves. Nashir requires two separate functions: one to run the server directly
-  without building, and another to serve as the program's entry point in case of building.
+### Configure Nashir
+
+Configure the Nashir library at the end of your program using the setup macro. You can set the
+verbose value to 1 to get more detailed information during project deployment. The macro takes
+a single argument, which is an object of the Config class. This macro will handle configuring
+the Nashir settings and the ProgArg library settings, which Nashir uses to process user inputs.
+If the program uses the Web Platform library, this macro will also create the two main functions
+responsible for starting the program and running the server, unless the user provides these
+functions themselves. Nashir requires two separate functions: one to run the server directly
+without building, and another to serve as the program's entry point in case of building.
 
 ```
 Nashir.verbose = false;
@@ -44,15 +48,19 @@ Nashir.setup[Nashir.Config().{
 }];
 ```
 
-* Nashir relies on the ProgArg library to parse program arguments. After calling the setup macro,
-  Nashir will have completed the initialization of commands in ProgArg, and you can now ask ProgArg
-  to process user inputs.
+### Parse arguments
+
+Nashir relies on the ProgArg library to parse program arguments. After calling the setup macro,
+Nashir will have completed the initialization of commands in ProgArg, and you can now ask ProgArg
+to process user inputs.
 
 ```
 ProgArg.parse(2);
 ```
 
-* After finishing these steps you'll be able to run the app directly:
+### Run & Publish
+
+After finishing the previous steps you'll be able to run the app directly:
 
 ```
 alusus main.alusus start
@@ -80,34 +88,65 @@ run it automatically. Follow the instructions that appear to complete the deploy
 
 The class contains the following variables:
 
-* `projectName: String
+* `projectName: String`
 
 * `projectVersion: String`
+
 * `serverPort: Int`
-* `serverOptions: Array[CharsPtr]` - This parameter is used to specify the Http server options if
+
+* `serverOptions: Array[CharsPtr]` 
+  
+  This parameter is used to specify the Http server options if
   we ask Nashir to create the two main functions.
-* `webPlatformMainAssetsPath: String` - The path to the main assets required by the Web Platform
+
+* `webPlatformMainAssetsPath: String`
+
+  The path to the main assets required by the Web Platform
   library. Ignored if Nashir is not asked to create the two main functions.
-* `webPlatformUiEndpointsPath: String` - The path to the UI endpoints files required by the Web
+
+* `webPlatformUiEndpointsPath: String` 
+  
+  The path to the UI endpoints files required by the Web
   Platform library. Ignored if Nashir is not asked to create the two main functions.
-* `assets: Map[String, String]` - A list of paths to resources used by the program. These resources will
+
+* `assets: Map[String, String]` 
+
+  A list of paths to resources used by the program. These resources will
   be included with the project when building and deploying. The key of this map holds the path to the
   source path of these resources, while the value should hold the path to which the resources
   will be copied, relative to the build directory. You don't need to provide the assets that
   are covered in source code definitions using the `@assetsRoute` modifier; those will be handled
   automatically by Nashir.
-* `dependencies: Array[String]` - A list of libraries required by the project during building.
-* `publishDriver: SrdRef[PublishDriver]` - The driver used to publish the project.
-* `serverModules: ref[TiObject]` - A reference to the module or modules required by the Web Platform
+
+* `dependencies: Array[String]` 
+  
+  A list of libraries required by the project during building.
+
+* `publishDriver: SrdRef[PublishDriver]` 
+  
+  The driver used to publish the project.
+
+* `serverModules: ref[TiObject]`
+
+  A reference to the module or modules required by the Web Platform
   during the project's execution and building.
-* `startJit: ref[TiObject]` - A reference to the server startup function for direct execution. If
+
+* `startJit: ref[TiObject]` 
+  
+  A reference to the server startup function for direct execution. If
   this function is not provided and the project uses the Web Platform, Nashir will create the
   function itself. This function takes no args and returns no value.
-* `startExe: ref[TiObject]` - A reference to the program entry point function used when creating an
+
+* `startExe: ref[TiObject]`
+  
+  A reference to the program entry point function used when creating an
   executable version of the project. If this function is not provided and the project uses the Web
   Platform, Nashir will create the function itself. The definition of this function should match
   the program's main function.
-* `initializer: ref[TiObject]` - An optional property, which is a reference to an initializer
+
+* `initializer: ref[TiObject]` 
+  
+  An optional property, which is a reference to an initializer
   function to be called by the generated entry point functions (startExe and startJit), in
   case the user chooses for those to be generated by Nashir. This function should receive no
   args and return no value. This should not be provided alongside `startExe` and `startJit`.
@@ -148,7 +187,7 @@ to Alusus Net. This is useful in cases where the name that we want to use in the
 is different from the name to be used in Alusus Net, since Alusus Net has more strict requirements
 for the project name.
 
-### SshDriver
+#### SshDriver
 
 Used to publish the project using SSH to any service supporting SSH. To initialize the driver:
 
@@ -172,8 +211,6 @@ the path on the server where the uploaded files will be stored.
 The fifth argument is optional, and it's the name of the systemd service used to run
 the project. If this argument is provided that systemd service will be restarted
 after publishing.
-
----
 
 ## License
 
