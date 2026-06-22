@@ -1,4 +1,4 @@
-# Nashir
+# نـاشر (Nashir)
 [[English]](README.md)
 
 <div dir=rtl>
