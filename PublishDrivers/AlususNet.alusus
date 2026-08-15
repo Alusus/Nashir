@@ -23,6 +23,7 @@ Apm.importPackage("Alusus/AlususNet@0.2");
     class AlususNetPublishDriver {
         @injection def driver: PublishDriver;
         def publishProjectName: String;
+        def desiredPlan: String;
         def apiToken: String;
 
         handler this~init(projName: String, apiToken: String) {
@@ -30,15 +31,15 @@ Apm.importPackage("Alusus/AlususNet@0.2");
             this.apiToken = apiToken;
         }
 
-        handler this_type(): SrdRef[PublishDriver] {
+        handler this_type(): SrdRef[AlususNetPublishDriver] {
             return SrdRef[AlususNetPublishDriver]().{ alloc()~init(String(), String()) };
         }
 
-        handler this_type(pubProjName: String): SrdRef[PublishDriver] {
+        handler this_type(pubProjName: String): SrdRef[AlususNetPublishDriver] {
             return SrdRef[AlususNetPublishDriver]().{ alloc()~init(pubProjName, String()) };
         }
 
-        handler this_type(pubProjName: String, apiTok: String): SrdRef[PublishDriver] {
+        handler this_type(pubProjName: String, apiTok: String): SrdRef[AlususNetPublishDriver] {
             return SrdRef[AlususNetPublishDriver]().{ alloc()~init(pubProjName, apiTok) };
         }
 
@@ -49,6 +50,7 @@ Apm.importPackage("Alusus/AlususNet@0.2");
 
         handler (this: PublishDriver).publish() set_ptr {
             def alususNetClient: AlususNet.Client(this.projectName, this.apiToken, verbose);
+            alususNetClient.setDesiredPlan(this.desiredPlan);
             alususNetClient.publish(config.serverPort, buildPath, String("start"));
         }
         
