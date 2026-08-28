@@ -187,6 +187,9 @@ to Alusus Net. This is useful in cases where the name that we want to use in the
 is different from the name to be used in Alusus Net, since Alusus Net has more strict requirements
 for the project name.
 
+The driver also exposes a `desiredPlan: String` property that can be set to specify the
+subscription plan to request when publishing the project to Alusus Net.
+
 #### SshDriver
 
 Used to publish the project using SSH to any service supporting SSH. To initialize the driver:
