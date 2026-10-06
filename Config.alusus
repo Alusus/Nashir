@@ -28,10 +28,10 @@
         def assets: Map[String, String];
         def dependencies: Array[String];
         def publishDriver: SrdRef[PublishDriver];
-        def startJit: TioRef(nullRef[TiObject]);
-        def startExe: TioRef(nullRef[TiObject]);
-        def initializer: TioRef(nullRef[TiObject]);
-        def serverModules: TioRef(Root~ast);
+        def startJit: ref[Node](nullRef[Node]);
+        def startExe: ref[Node](nullRef[Node]);
+        def initializer: ref[Node](nullRef[Node]);
+        def serverModules: ref[Node](Root~ast);
         def dbRestorePath: String;
         def dbBackupPath: String;
 

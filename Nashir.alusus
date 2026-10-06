@@ -24,11 +24,11 @@ import "Srl/Fs.alusus";
 import "Spp";
 import "Build";
 import "Apm";
-Apm.importPackage("Alusus/Sle@0.2", "Srl/Net");
-Apm.importPackage("Alusus/Json@0.2");
+Apm.importPackage("Alusus/Sle@0.3", "Srl/Net");
+Apm.importPackage("Alusus/Json@0.3");
 Apm.importPackage("Alusus/Crypto@0.1");
-Apm.importPackage("Alusus/I18n@0.3");
-Apm.importPackage("Alusus/ProgArg@0.2");
+Apm.importPackage("Alusus/I18n@0.4");
+Apm.importPackage("Alusus/ProgArg@0.3");
 
 import "Config";
 import "PublishDrivers/PublishDriver";
@@ -36,6 +36,7 @@ import "PublishDrivers/PublishDriver";
 @merge module Nashir {
     use Srl;
     use Core.Basic;
+    use Core.Ast;
 
     // Paths
     def buildPath: String(1, "Build");
@@ -49,9 +50,6 @@ import "PublishDrivers/PublishDriver";
 
     def config: Config;
     def verbose: Bool(false);
-
-    def TioRef: alias ref[TiObject];
-    def TioSrdRef: alias SrdRef[TiObject];
 
     func initializeTranslations {
         def poContent: Srl.String;
@@ -146,13 +144,15 @@ import "PublishDrivers/PublishDriver";
                     ast WebPlatform.buildUiEndpoints(
                         modules~ast,
                         buildPath + "/" + config.webPlatformMainAssetsPath,
-                        buildPath + "/" + config.webPlatformUiEndpointsPath
+                        buildPath + "/" + config.webPlatformUiEndpointsPath,
+                        true
                     )
                 );
             }
         }
         def exe: Build.Exe(start~ast، buildPath + "/start");
         exe.addDependencies(config.dependencies);
+        exe.optimize = 1;
         if exe.generate() {
             Console.print(i18nOut("Build complete.\n"));
         } else {
@@ -162,7 +162,7 @@ import "PublishDrivers/PublishDriver";
 
     func isWebPlatformInUse(): Bool {
         use Srl;
-        def webPlatform: Array[ref[TiObject]] = Spp.astMgr.findElements(
+        def webPlatform: Array[ref[Node]] = Spp.astMgr.findElements(
             (ast WebPlatform),
             Root~ast,
             Spp.SeekerFlags.SKIP_OWNERS | Spp.SeekerFlags.SKIP_USES | Spp.SeekerFlags.SKIP_CHILDREN
@@ -207,15 +207,15 @@ import "PublishDrivers/PublishDriver";
         }
 
         // Generate statements.
-        def startJitPassage: Core.Data.Ast.Passage(config.startJit);
-        def startExePassage: Core.Data.Ast.Passage(config.startExe);
-        def startJit: TioRef;
-        def startExe: TioRef;
+        def startJitPassage: Passage(config.startJit);
+        def startExePassage: Passage(config.startExe);
+        def startJit: ref[Node];
+        def startExe: ref[Node];
         if config.startJit~ptr == 0 {
             startJit~no_deref = ast _startJit;
             startExe~no_deref = ast _startExe;
-            def initializerPassage: Core.Data.Ast.Passage(config.initializer);
-            def initializer: TioRef;
+            def initializerPassage: Passage(config.initializer);
+            def initializer: ref[Node];
             if config.initializer~ptr == 0 initializer~no_deref = ast Nashir.dummyInitializer
             else initializer~no_deref = initializerPassage;
             Spp.astMgr.insertAst(
@@ -224,11 +224,11 @@ import "PublishDrivers/PublishDriver";
                         assetsPath, endpointsPath, serverModules, serverPort, Array[CharsPtr]({ serverOptions }), initializer
                     ];
                 },
-                Map[String, TioRef]()
-                    .set(String("assetsPath"), Core.Data.Ast.StringLiteral(config.webPlatformMainAssetsPath))
-                    .set(String("endpointsPath"), Core.Data.Ast.StringLiteral(config.webPlatformUiEndpointsPath))
-                    .set(String("serverModules"), Core.Data.Ast.Passage(config.serverModules))
-                    .set(String("serverPort"), Core.Data.Ast.IntegerLiteral(String() + config.serverPort))
+                Map[String, ref[Node]]()
+                    .set(String("assetsPath"), StringLiteral(config.webPlatformMainAssetsPath))
+                    .set(String("endpointsPath"), StringLiteral(config.webPlatformUiEndpointsPath))
+                    .set(String("serverModules"), Passage(config.serverModules))
+                    .set(String("serverPort"), IntegerLiteral(String() + config.serverPort))
                     .set(String("serverOptions"), generateStringLiteralList(config.serverOptions))
                     .set(String("initializer"), initializer)
             );
@@ -241,10 +241,10 @@ import "PublishDrivers/PublishDriver";
                 Nashir.initializeProgArg[startExe, startJit, serverModules];
                 Nashir.initializeTranslations();
             },
-            Map[String, TioRef]()
+            Map[String, ref[Node]]()
                 .set(String("startJit"), startJit)
                 .set(String("startExe"), startExe)
-                .set(String("serverModules"), Core.Data.Ast.Passage(config.serverModules))
+                .set(String("serverModules"), Passage(config.serverModules))
         );
     }
 
@@ -253,16 +253,16 @@ import "PublishDrivers/PublishDriver";
         System.fail(1, error);
     }
 
-    func generateStringLiteralList(strs: Array[CharsPtr]): TioSrdRef {
-        def list: SrdRef[Core.Data.Ast.List] = newSrdObj[Core.Data.Ast.List];
-        def listContainer: DynContainerOf[list.obj];
+    func generateStringLiteralList(strs: Array[CharsPtr]): SrdRef[Node] {
+        def list: SrdRef[List] = newSrdObj[List];
+        def listContainer: DynContainerOf[list.obj, Node];
         def i: Int;
         for i = 0, i < strs.getLength(), ++i {
-            def arg: SrdRef[Core.Data.Ast.StringLiteral] = newSrdObj[Core.Data.Ast.StringLiteral];
+            def arg: SrdRef[StringLiteral] = newSrdObj[StringLiteral];
             arg.value.value = String(strs(i));
             listContainer.addElement(arg.obj);
         }
-        return castSrdRef[list, TiObject];
+        return list;
     }
 
     func dummyInitializer {
